@@ -1,4 +1,7 @@
 //200216 fujigaya2
+//200529 クラス化とか
+
+#include "fujigaya2_dcc.h"
 
 #define BIT_ONE_US 56
 #define BIT_ZERO_US 110
