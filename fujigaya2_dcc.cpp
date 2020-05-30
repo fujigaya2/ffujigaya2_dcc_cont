@@ -42,7 +42,10 @@ void dcc_cont::write_idle_packet()
 void dcc_cont::write_reset_packet()
 {
   //send reset packet
-  write_2_packet(0x00,0x00);
+  raw_packet_reset();
+  raw_packet_add(0x00);
+  raw_packet_add(0x00);
+  write_packet_auto();
 }
 
 
@@ -90,35 +93,54 @@ uint8_t dcc_cont::write_packet_auto()
 {
   //raw_Packet送信用
   //可変送信対応のため
-  uint8_t checksum = 0x00;
-  write_preamble();
-  for(int i = 0 ;i< raw_packet_length;i++)
+  //repet_packet回　繰り返す。
+  for(int i = 0;i < repeat_packet;i++)
   {
-    //write
-    write_byte(raw_packet[i]);
-    //CheckSum
-    checksum ^= raw_packet[i];
-  }
-  //write checksum
-  write_byte(checksum);
-  //packet_end_bit
-  bit_one();   
+    uint8_t checksum = 0x00;
+    write_preamble();
+    for(int j = 0 ;j< raw_packet_length;j++)
+    {
+      //write
+      write_byte(raw_packet[j]);
+      //CheckSum
+      checksum ^= raw_packet[j];
+    }
+    //write checksum
+    write_byte(checksum);
+    //packet_end_bit
+    bit_one();
+  }   
 }
 
-void dcc_cont::write_speed_packet(unsigned int address,bool loco_direction,byte loco_speed)
+bool dcc_cont::loco_address_convert_add(int loco_address)
 {
-  //現状addressは0-127のみ受け付ける
-  //loco_direction forward:true,reverse:false
-  //loco_speed は2 - 127,0は停止、1は緊急停止らしいが・・・。
-  //命令開始
-  digitalWrite(LED_BUILTIN,HIGH);
-  byte temp_speed = loco_speed;
+  //loco addressを命令に変更し加える。
+  if(loco_address <= 127)
+  {
+    //127以下
+    raw_packet_add(uint8_t(loco_address));
+  }
+  else
+  {
+    //128以上
+    uint8_t address_upper = ((uint16_t)loco_address >> 8) | 0b11000000;
+    uint8_t address_lower = (uint16_t)loco_address & 0x00ff;
+    raw_packet_add(address_upper);
+    raw_packet_add(address_lower);
+  }
+  return true;
+}
+
+bool dcc_cont::loco_speed_convert_add(bool loco_direction,byte loco_speed)
+{
+  //speedとdirectionを命令に変換し加える。
+  //128step限定とする。
   //上限カット
+  byte temp_speed = loco_speed;  
   if(temp_speed > 127)
   {
     temp_speed = 127;
   }
-  
   if(loco_direction == true)
   {
     temp_speed |= LOCO_FORWARD;
@@ -127,11 +149,31 @@ void dcc_cont::write_speed_packet(unsigned int address,bool loco_direction,byte 
   {
     temp_speed |= LOCO_REVERSE;
   }
-  
-  for(int i = 0;i < repeat_packet;i++)
-  {
-    write_3_packet((byte)address,STEP128,temp_speed);
-  }
+  //step128 only
+  raw_packet_add(STEP128);
+  //speed and direction
+  raw_packet_add(temp_speed);
+
+  return true;
+}
+
+void dcc_cont::write_speed_packet(unsigned int address,bool loco_direction,byte loco_speed)
+{
+  //loco_direction forward:true,reverse:false
+  //loco_speed は2 - 127,0は停止、1は緊急停止らしいが・・・。
+  //命令開始
+  digitalWrite(LED_BUILTIN,HIGH);
+
+
+  raw_packet_reset();
+  //address convert
+  loco_address_convert_add(address);
+  //speed direction
+  loco_speed_convert_add(loco_direction,loco_speed);
+
+  //send
+  write_packet_auto();
+
   //命令終了
   digitalWrite(LED_BUILTIN,LOW);  
 }
@@ -144,15 +186,6 @@ void dcc_cont::write_3_packet(byte byte_one,byte byte_two,byte byte_three)
   raw_packet_add(byte_two);
   raw_packet_add(byte_three);
   write_packet_auto();
-/*  
-  write_preamble();
-  write_byte(byte_one);
-  write_byte(byte_two);
-  write_byte(byte_three);
-  write_byte(byte_one ^ byte_two ^ byte_three);
-  //packet_end_bit
-  bit_one();  
-  */
 }
 
 void dcc_cont::write_2_packet(byte byte_one,byte byte_two)
@@ -161,16 +194,6 @@ void dcc_cont::write_2_packet(byte byte_one,byte byte_two)
   raw_packet_add(byte_one);
   raw_packet_add(byte_two);
   write_packet_auto();
-
-/*
-  //Idle Packet,2byte order 送信用
-  write_preamble();
-  write_byte(byte_one);
-  write_byte(byte_two);
-  write_byte(byte_one ^ byte_two);
-  //packet_end_bit
-  bit_one();  
-  */
 }
 
 void dcc_cont::write_preamble()

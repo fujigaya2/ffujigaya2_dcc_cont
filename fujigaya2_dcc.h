@@ -50,6 +50,8 @@ class dcc_cont
     virtual void dcc_cont::raw_packet_reset();
     virtual void dcc_cont::raw_packet_add(uint8_t value);
     virtual uint8_t dcc_cont::write_packet_auto();
+    virtual bool loco_address_convert_add(int loco_address);
+    virtual bool dcc_cont::loco_speed_convert_add(bool loco_direction,byte loco_speed);
 
     uint8_t preamble_num = PREAMBLE_NUM;
     uint8_t repeat_packet = REPEAT_PACKET;
