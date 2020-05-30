@@ -33,8 +33,18 @@ void dcc_cont::set_pulse_us(uint32_t one_us,uint32_t zero_us)
 void dcc_cont::write_idle_packet()
 {
   //send idle packet
-  write_2_packet(0xFF,0x00);
+  raw_packet_reset();
+  raw_packet_add(0xff);
+  raw_packet_add(0x00);
+  write_packet_auto();
 }
+
+void dcc_cont::write_reset_packet()
+{
+  //send reset packet
+  write_2_packet(0x00,0x00);
+}
+
 
 void dcc_cont::write_Func04_packet(unsigned int address,byte function,bool on_off)
 {
@@ -57,6 +67,42 @@ void dcc_cont::write_Func04_packet(unsigned int address,byte function,bool on_of
   }
   //命令終了
   digitalWrite(LED_BUILTIN,LOW);    
+}
+
+//private
+
+void dcc_cont::raw_packet_reset()
+{
+  for(int i = 0;i < RAW_PACKET_LENGTH_DAFAULT;i++)
+  {
+    raw_packet[i] = 0x00;
+  }
+  raw_packet_length = 0;
+}
+
+void dcc_cont::raw_packet_add(uint8_t value)
+{
+  raw_packet[raw_packet_length] = value;
+  raw_packet_length++;
+}
+
+uint8_t dcc_cont::write_packet_auto()
+{
+  //raw_Packet送信用
+  //可変送信対応のため
+  uint8_t checksum = 0x00;
+  write_preamble();
+  for(int i = 0 ;i< raw_packet_length;i++)
+  {
+    //write
+    write_byte(raw_packet[i]);
+    //CheckSum
+    checksum ^= raw_packet[i];
+  }
+  //write checksum
+  write_byte(checksum);
+  //packet_end_bit
+  bit_one();   
 }
 
 void dcc_cont::write_speed_packet(unsigned int address,bool loco_direction,byte loco_speed)
@@ -93,6 +139,12 @@ void dcc_cont::write_speed_packet(unsigned int address,bool loco_direction,byte 
 void dcc_cont::write_3_packet(byte byte_one,byte byte_two,byte byte_three)
 {
   //3命令送信用
+  raw_packet_reset();
+  raw_packet_add(byte_one);
+  raw_packet_add(byte_two);
+  raw_packet_add(byte_three);
+  write_packet_auto();
+/*  
   write_preamble();
   write_byte(byte_one);
   write_byte(byte_two);
@@ -100,10 +152,17 @@ void dcc_cont::write_3_packet(byte byte_one,byte byte_two,byte byte_three)
   write_byte(byte_one ^ byte_two ^ byte_three);
   //packet_end_bit
   bit_one();  
+  */
 }
 
 void dcc_cont::write_2_packet(byte byte_one,byte byte_two)
 {
+  raw_packet_reset();
+  raw_packet_add(byte_one);
+  raw_packet_add(byte_two);
+  write_packet_auto();
+
+/*
   //Idle Packet,2byte order 送信用
   write_preamble();
   write_byte(byte_one);
@@ -111,6 +170,7 @@ void dcc_cont::write_2_packet(byte byte_one,byte byte_two)
   write_byte(byte_one ^ byte_two);
   //packet_end_bit
   bit_one();  
+  */
 }
 
 void dcc_cont::write_preamble()
