@@ -37,7 +37,7 @@ void dcc_cont::write_idle_packet()
   raw_packet_reset();
   raw_packet_add(0xff);
   raw_packet_add(0x00);
-  write_packet_auto();
+  write_packet();
 }
 
 void dcc_cont::write_reset_packet()
@@ -46,7 +46,7 @@ void dcc_cont::write_reset_packet()
   raw_packet_reset();
   raw_packet_add(0x00);
   raw_packet_add(0x00);
-  write_packet_auto();
+  write_packet();
 }
 
 void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
@@ -135,7 +135,7 @@ void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
   //function convert
   loco_func_convert_add(function,on_off);
   //送信
-  write_packet_auto();
+  write_packet();
   //命令終了
   digitalWrite(LED_BUILTIN,LOW);    
 }
@@ -159,7 +159,7 @@ void dcc_cont::raw_packet_add(uint8_t value)
   raw_packet_length++;
 }
 
-uint8_t dcc_cont::write_packet_auto()
+uint8_t dcc_cont::write_packet()
 {
   //raw_Packet送信用
   //可変送信対応
@@ -242,28 +242,10 @@ void dcc_cont::write_speed_packet(unsigned int address,bool loco_direction,byte 
   loco_speed_convert_add(loco_direction,loco_speed);
 
   //send
-  write_packet_auto();
+  write_packet();
 
   //命令終了
   digitalWrite(LED_BUILTIN,LOW);  
-}
-
-void dcc_cont::write_3_packet(byte byte_one,byte byte_two,byte byte_three)
-{
-  //3命令送信用
-  raw_packet_reset();
-  raw_packet_add(byte_one);
-  raw_packet_add(byte_two);
-  raw_packet_add(byte_three);
-  write_packet_auto();
-}
-
-void dcc_cont::write_2_packet(byte byte_one,byte byte_two)
-{
-  raw_packet_reset();
-  raw_packet_add(byte_one);
-  raw_packet_add(byte_two);
-  write_packet_auto();
 }
 
 void dcc_cont::write_preamble()
