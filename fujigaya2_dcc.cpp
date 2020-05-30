@@ -9,6 +9,7 @@ dcc_cont::dcc_cont(uint8_t out_pin1,uint8_t out_pin2)
   //pin config
   pinMode(out_pin1, OUTPUT);   // 出力に設定
   pinMode(out_pin2, OUTPUT);  // 出力に設定
+
 }
 
 void dcc_cont::set_repeat_preamble(uint8_t repeat_num)
@@ -48,31 +49,100 @@ void dcc_cont::write_reset_packet()
   write_packet_auto();
 }
 
-
-void dcc_cont::write_Func04_packet(unsigned int address,byte function,bool on_off)
+void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
 {
-  //function f0 - f4
-  //現状addressは0-127のみ受け付ける
-  static byte past_F0F4 = F0F4MASK;
+  //write function
+  //送信functionマップに合わせて少々特殊な順番で格納する。
+  static uint32_t past_func = 0x00000000;
   //命令開始
   digitalWrite(LED_BUILTIN,HIGH);
+  //格納
   if(on_off == true)//Onの時
   {
-    past_F0F4 |= function;
+    switch(function_no)
+    {
+      case 0:
+        past_func |= F0_MASK;
+        break;
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        past_func |= 0x01 << (function_no - 1);
+        break;
+      default:
+        past_func |= 0x01 << function_no;
+        break;
+    }
   }
-  else
+  else//on_off = falseのとき
   {
-    past_F0F4 ^= function;
+    switch(function_no)
+    {
+      case 0:
+        past_func ^= F0_MASK;
+        break;
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        past_func ^= 0x01 << (function_no - 1);
+        break;
+      default:
+        past_func ^= 0x01 << function_no;
+        break;
+    }
   }
-  for(int i = 0;i < repeat_packet;i++)
+  //送信
+  if(function_no <= 4)//f0-f4
   {
-    write_2_packet((byte)address,past_F0F4);
+    raw_packet_add((uint8_t)past_func & F0F4MASK | F0F4ORDER);
   }
+  else if(function_no <= 8)//f5-f8
+  {
+    raw_packet_add((uint8_t)(past_func >> 5) & F5F8MASK | F5F8ORDER);
+  }
+  else if(function_no <= 12)//f9-f12
+  {
+    raw_packet_add((uint8_t)(past_func >> 9) & F9F12MASK | F9F12ORDER);
+  }
+  else if(function_no <= 20)//f13-f20
+  {
+    raw_packet_add(F13F20ORDER);
+    raw_packet_add((uint8_t)(past_func >> 13));
+  }
+  else//f21-f28
+  {
+    raw_packet_add(F21F28ORDER);
+    raw_packet_add((uint8_t)(past_func >> 21));
+  }
+  //Serial.print(past_func,HEX);
+  //Serial.print(",");
+  //Serial.println((uint8_t)past_func & F0F4MASK | F0F4ORDER,HEX);
+  
+}
+
+void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
+{
+  //function write
+  //現状複数Locoを扱ったときはStaticで１Function状態しか記憶していないため、問題が生じる。！
+ 
+  //命令開始
+  digitalWrite(LED_BUILTIN,HIGH);
+  raw_packet_reset();
+  //address convert
+  loco_address_convert_add(address);
+  //function convert
+  loco_func_convert_add(function,on_off);
+  //送信
+  write_packet_auto();
   //命令終了
   digitalWrite(LED_BUILTIN,LOW);    
 }
 
 //private
+
+
 
 void dcc_cont::raw_packet_reset()
 {
@@ -92,7 +162,7 @@ void dcc_cont::raw_packet_add(uint8_t value)
 uint8_t dcc_cont::write_packet_auto()
 {
   //raw_Packet送信用
-  //可変送信対応のため
+  //可変送信対応
   //repet_packet回　繰り返す。
   for(int i = 0;i < repeat_packet;i++)
   {

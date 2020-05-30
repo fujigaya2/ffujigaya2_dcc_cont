@@ -11,15 +11,22 @@
 #define DECODER_ADDRESS 0x03
 
 #define STEP128   0b00111111
-#define F0F4MASK  0b10000000 
+//#define F0F4MASK  0b10000000 
 #define F0_MASK   0b00010000 
 #define F1_MASK   0b00000001 
 #define F2_MASK   0b00000010 
 #define F3_MASK   0b00000100 
 #define F4_MASK   0b00001000 
 
-#define F5F8MASK  0b10111111
-#define F9F12MASK 0b10101111
+#define F0F4MASK    0b00011111
+#define F0F4ORDER   0b10000000 
+#define F5F8MASK    0b00001111
+#define F5F8ORDER   0b10110000
+#define F9F12MASK   0b00001111
+#define F9F12ORDER  0b10100000
+#define F13F20ORDER 0b11011110
+#define F21F28ORDER 0b11011111
+
 #define LOCO_FORWARD 0b10000000
 #define LOCO_REVERSE 0b00000000
 
@@ -32,7 +39,7 @@ class dcc_cont
 {
   public:
     dcc_cont(uint8_t out_pin1 = OUTPIN1_DEFAULT,uint8_t out_pin2 = OUTPIN2_DEFAULT);
-    virtual void write_Func04_packet(unsigned int address,byte function,bool on_off);
+    virtual void write_func_packet(unsigned int address,byte function,bool on_off);
     virtual void write_speed_packet(unsigned int address,bool loco_direction,byte loco_speed);
     virtual void write_idle_packet();
     virtual void dcc_cont::write_reset_packet()    ;
@@ -51,7 +58,8 @@ class dcc_cont
     virtual void dcc_cont::raw_packet_add(uint8_t value);
     virtual uint8_t dcc_cont::write_packet_auto();
     virtual bool loco_address_convert_add(int loco_address);
-    virtual bool dcc_cont::loco_speed_convert_add(bool loco_direction,byte loco_speed);
+    virtual bool loco_speed_convert_add(bool loco_direction,byte loco_speed);
+    virtual void loco_func_convert_add(uint8_t function_no,bool on_off);
 
     uint8_t preamble_num = PREAMBLE_NUM;
     uint8_t repeat_packet = REPEAT_PACKET;

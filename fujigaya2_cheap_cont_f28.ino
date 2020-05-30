@@ -78,7 +78,7 @@ bool user_program(void)
   if( digitalRead(BTN_F0) == 0)
   {
     state_btn_f0 = !state_btn_f0;
-    DCC.write_Func04_packet(DECODER_ADDRESS,F0_MASK,state_btn_f0);
+    DCC.write_func_packet(DECODER_ADDRESS,0,state_btn_f0);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -86,7 +86,7 @@ bool user_program(void)
   if( digitalRead(BTN_F1) == 0)
   {
     state_btn_f1 = !state_btn_f1;
-    DCC.write_Func04_packet(DECODER_ADDRESS,F1_MASK,state_btn_f1);
+    DCC.write_func_packet(DECODER_ADDRESS,1,state_btn_f1);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -94,7 +94,7 @@ bool user_program(void)
   if( digitalRead(BTN_F2) == 0)
   {
     state_btn_f2 = !state_btn_f2;
-    DCC.write_Func04_packet(DECODER_ADDRESS,F2_MASK,state_btn_f2);
+    DCC.write_func_packet(DECODER_ADDRESS,2,state_btn_f2);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -102,7 +102,7 @@ bool user_program(void)
   if( digitalRead(BTN_F3) == 0)
   {
     state_btn_f3 = !state_btn_f3;
-    DCC.write_Func04_packet(DECODER_ADDRESS,F3_MASK,state_btn_f3);
+    DCC.write_func_packet(DECODER_ADDRESS,3,state_btn_f3);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -110,7 +110,7 @@ bool user_program(void)
   if( digitalRead(BTN_F4) == 0)
   {
     state_btn_f4 = !state_btn_f4;
-    DCC.write_Func04_packet(DECODER_ADDRESS,F4_MASK,state_btn_f4);
+    DCC.write_func_packet(DECODER_ADDRESS,4,state_btn_f4);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
