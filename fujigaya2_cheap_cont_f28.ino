@@ -5,7 +5,7 @@
 
 
 
-//CheapContriller用 190908 fujigaya2
+//CheapController用 190908 fujigaya2
 #define SPEED_REF A2
 #define BTN_DIR A3
 #define BTN_F0 6

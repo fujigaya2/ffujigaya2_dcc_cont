@@ -49,6 +49,42 @@ void dcc_cont::write_reset_packet()
   write_packet();
 }
 
+
+void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
+{
+  //function write
+  //現状複数Locoを扱ったときはStaticで１Function状態しか記憶していないため、問題が生じる。！
+ 
+  //命令開始
+  digitalWrite(LED_BUILTIN,HIGH);
+  raw_packet_reset();
+  //address convert
+  loco_address_convert_add(address);
+  //function convert
+  loco_func_convert_add(function,on_off);
+  //送信
+  write_packet();
+  //命令終了
+  digitalWrite(LED_BUILTIN,LOW);    
+}
+
+void dcc_cont::write_accessory_packet(unsigned int address,bool on_off)
+{
+  //accessory write
+  //命令開始
+  digitalWrite(LED_BUILTIN,HIGH);
+  raw_packet_reset();
+  //address & on_off convert
+  accessory_address_onoff_convert_add(address,on_off);
+  //送信
+  write_packet();
+  //命令終了
+  digitalWrite(LED_BUILTIN,LOW);
+}
+
+//private
+
+
 void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
 {
   //write function
@@ -122,39 +158,6 @@ void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
   
 }
 
-void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
-{
-  //function write
-  //現状複数Locoを扱ったときはStaticで１Function状態しか記憶していないため、問題が生じる。！
- 
-  //命令開始
-  digitalWrite(LED_BUILTIN,HIGH);
-  raw_packet_reset();
-  //address convert
-  loco_address_convert_add(address);
-  //function convert
-  loco_func_convert_add(function,on_off);
-  //送信
-  write_packet();
-  //命令終了
-  digitalWrite(LED_BUILTIN,LOW);    
-}
-
-void dcc_cont::write_accessory_packet(unsigned int address,bool on_off)
-{
-  //accessory write
-  //命令開始
-  digitalWrite(LED_BUILTIN,HIGH);
-  raw_packet_reset();
-  //address & on_off convert
-  accessory_address_onoff_convert_add(address,on_off);
-  //送信
-  write_packet();
-  //命令終了
-  digitalWrite(LED_BUILTIN,LOW);
-}
-
-//private
 
 void dcc_cont::accessory_address_onoff_convert_add(unsigned int address,bool on_off)
 {
