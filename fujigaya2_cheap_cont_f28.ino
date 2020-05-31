@@ -78,7 +78,8 @@ bool user_program(void)
   if( digitalRead(BTN_F0) == 0)
   {
     state_btn_f0 = !state_btn_f0;
-    DCC.write_func_packet(DECODER_ADDRESS,0,state_btn_f0);
+    //DCC.write_func_packet(DECODER_ADDRESS,0,state_btn_f0);
+    DCC.write_accessory_packet(0,true);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -86,7 +87,8 @@ bool user_program(void)
   if( digitalRead(BTN_F1) == 0)
   {
     state_btn_f1 = !state_btn_f1;
-    DCC.write_func_packet(DECODER_ADDRESS,1,state_btn_f1);
+    //DCC.write_func_packet(DECODER_ADDRESS,1,state_btn_f1);
+    DCC.write_accessory_packet(1,true);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -94,7 +96,8 @@ bool user_program(void)
   if( digitalRead(BTN_F2) == 0)
   {
     state_btn_f2 = !state_btn_f2;
-    DCC.write_func_packet(DECODER_ADDRESS,2,state_btn_f2);
+    //DCC.write_func_packet(DECODER_ADDRESS,2,state_btn_f2);
+    DCC.write_accessory_packet(2,true);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -102,7 +105,8 @@ bool user_program(void)
   if( digitalRead(BTN_F3) == 0)
   {
     state_btn_f3 = !state_btn_f3;
-    DCC.write_func_packet(DECODER_ADDRESS,3,state_btn_f3);
+    //DCC.write_func_packet(DECODER_ADDRESS,3,state_btn_f3);
+    DCC.write_accessory_packet(3,true);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -110,7 +114,8 @@ bool user_program(void)
   if( digitalRead(BTN_F4) == 0)
   {
     state_btn_f4 = !state_btn_f4;
-    DCC.write_func_packet(DECODER_ADDRESS,4,state_btn_f4);
+    //DCC.write_func_packet(DECODER_ADDRESS,4,state_btn_f4);
+    DCC.write_accessory_packet(4,true);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -118,7 +123,8 @@ bool user_program(void)
   if( digitalRead(BTN_DIR) == 0)
   {
     state_btn_dir = !state_btn_dir;
-    DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,0);
+    //DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,0);
+    DCC.write_accessory_packet(5,true);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;

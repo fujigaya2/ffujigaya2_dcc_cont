@@ -140,8 +140,51 @@ void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
   digitalWrite(LED_BUILTIN,LOW);    
 }
 
+void dcc_cont::write_accessory_packet(unsigned int address,bool on_off)
+{
+  //accessory write
+  //命令開始
+  digitalWrite(LED_BUILTIN,HIGH);
+  raw_packet_reset();
+  //address & on_off convert
+  accessory_address_onoff_convert_add(address,on_off);
+  //送信
+  write_packet();
+  //命令終了
+  digitalWrite(LED_BUILTIN,LOW);
+}
+
 //private
 
+void dcc_cont::accessory_address_onoff_convert_add(unsigned int address,bool on_off)
+{
+  //全部一緒くたに入れないといけない・・・。
+  //addressは1～511以外を取らないこと！
+  //addressは1からとする
+  //1の時address = 1 DD = 0b00
+  //2の時address = 1 DD = 0b01
+  //3の時address = 1 DD = 0b10
+  //4の時address = 1 DD = 0b11
+  //5の時address = 2 DD = 0b00
+  //とする
+  uint8_t address_lower = (address / 4 + 1) & ACCESSORY_ADDRESS_MASK1;
+  uint8_t address_upper = ~((address / 4 + 1) >> 6) ;
+  uint8_t byte1 = ACCESSORY_ORDER | address_lower;
+  uint8_t byte2 = address_upper << 4 |(address % 4) << 1;
+  if(on_off == true)
+  {
+    byte2 |= ACCESSORY_ON;
+  }
+  else
+  {
+    byte2 |= ACCESSORY_OFF;
+  }
+  raw_packet_add(byte1);
+  raw_packet_add(byte2);
+  //Serial.print(byte1,BIN);
+  //Serial.print(",");
+  //Serial.println(byte2,BIN);  
+}
 
 
 void dcc_cont::raw_packet_reset()

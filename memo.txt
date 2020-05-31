@@ -33,6 +33,29 @@ FxをOnOffする関数を呼んで、中で振り分けとする！
 ・ファンクションを０～２８までにする。→たぶんOK（F9以降は今度確認する）
 
 ・ポイント機能を追加する。
+{preamble} 0 10AAAAAA 0 1AAACDDD 0 EEEEEEEE 1
+で2byte目のAAAは１の補数表現→裏返す。０１０→１０１となる。
+1byte目が低bitト側
+2byte目が高bit側とのこと。
+#define ACCESSORY_ORDER      0b10000000
+#define ACCESSORY_ADDRESS_MASK1 0b00111111
+#define ACCESSORY_ADDRESS_MASK2 0b01110000
+#define ACCESSORY_ON         0b10001000
+#define ACCESSORY_OFF        0b10000000
+
+CDDD
+でCは使用るときは１なので常時１
+0bitのDがOnOff
+１，２ビットは/4した余りを入れておくようだ。（不明）
+というか9ビットのアドレスの下にサブアドレスが4点いているってこと？
+そんなこと書いていないけど・・・。
+  //addressは1からとする
+  //1の時address = 1 D2D1 = 0b00
+  //2の時address = 1 D2D1 = 0b01
+  //3の時address = 1 D2D1 = 0b10
+  //4の時address = 1 D2D1 = 0b11
+  //5の時address = 2 D2D1 = 0b00
+  //とする
 
 
 ・loopの構造を考える。（定期的に今までの物も送るようにする。）slotを何個か設けるとかにするか？

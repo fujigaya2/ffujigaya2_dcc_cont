@@ -23,6 +23,13 @@
 #define F13F20ORDER 0b11011110
 #define F21F28ORDER 0b11011111
 
+#define ACCESSORY_ORDER         0b10000000
+#define ACCESSORY_ADDRESS_MASK1 0b00111111
+#define ACCESSORY_ADDRESS_MASK2 0b01110000
+
+#define ACCESSORY_ON         0b10001001
+#define ACCESSORY_OFF        0b10001000
+
 #define LOCO_FORWARD 0b10000000
 #define LOCO_REVERSE 0b00000000
 
@@ -37,6 +44,7 @@ class dcc_cont
     dcc_cont(uint8_t out_pin1 = OUTPIN1_DEFAULT,uint8_t out_pin2 = OUTPIN2_DEFAULT);
     virtual void write_func_packet(unsigned int address,byte function,bool on_off);
     virtual void write_speed_packet(unsigned int address,bool loco_direction,byte loco_speed);
+    virtual void write_accessory_packet(unsigned int address,bool on_off);
     virtual void write_idle_packet();
     virtual void write_reset_packet()    ;
     virtual void set_repeat_preamble(uint8_t repeat_num);
@@ -54,6 +62,7 @@ class dcc_cont
     virtual bool loco_address_convert_add(int loco_address);
     virtual bool loco_speed_convert_add(bool loco_direction,byte loco_speed);
     virtual void loco_func_convert_add(uint8_t function_no,bool on_off);
+    virtual void accessory_address_onoff_convert_add(unsigned int address,bool on_off);
 
     uint8_t preamble_num = PREAMBLE_NUM;
     uint8_t repeat_packet = REPEAT_PACKET;
