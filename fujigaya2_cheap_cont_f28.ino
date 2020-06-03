@@ -2,8 +2,7 @@
 //200529 クラス化とか
 
 #include "fujigaya2_dcc.h"
-
-
+#include "fujigaya2_ds_serial_master.h"
 
 //CheapController用 190908 fujigaya2
 #define SPEED_REF A2
@@ -18,6 +17,7 @@
 #define DCCPIN2 10
 
 dcc_cont DCC(DCCPIN1,DCCPIN2);
+ds_serial_master ds_serial;
 
 void setup()
 {
@@ -31,8 +31,7 @@ void setup()
   pinMode(BTN_F3, INPUT_PULLUP);
   pinMode(BTN_F4, INPUT_PULLUP);
   pinMode(BTN_DIR, INPUT_PULLUP); 
-  //Serial.begin(115200);
-
+  ds_serial.begin(115200);
 }
 
 void loop()
@@ -80,6 +79,7 @@ bool user_program(void)
     state_btn_f0 = !state_btn_f0;
     //DCC.write_func_packet(DECODER_ADDRESS,0,state_btn_f0);
     DCC.write_accessory_packet(0,true);
+    ds_serial.write_func_packet(DECODER_ADDRESS,0,state_btn_f0);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -89,6 +89,7 @@ bool user_program(void)
     state_btn_f1 = !state_btn_f1;
     //DCC.write_func_packet(DECODER_ADDRESS,1,state_btn_f1);
     DCC.write_accessory_packet(1,true);
+    ds_serial.write_accessory_packet(1,state_btn_f1);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -125,6 +126,7 @@ bool user_program(void)
     state_btn_dir = !state_btn_dir;
     //DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,0);
     DCC.write_accessory_packet(5,true);
+    ds_serial.write_direction_packet(DECODER_ADDRESS,state_btn_dir);
     chattering_flag = true;
     gPreviousL1 = millis();
     return true;
@@ -135,6 +137,7 @@ bool user_program(void)
     unsigned int current_speed_volume = analogRead(SPEED_REF);
     current_speed_volume = current_speed_volume / 8;
     DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,current_speed_volume);
+    ds_serial.write_speed_packet(DECODER_ADDRESS,current_speed_volume);
     gPreviousL2 =  millis();
     return true;
   }
