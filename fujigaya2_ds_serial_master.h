@@ -1,47 +1,15 @@
-//200603 fujigaya2_ds_serial_cont
+//200603 fujigaya2_ds_serial_master
 //desktopstation softwareの代わりにdsmainなどを制御するシリアルコマンドを送るライブラリ
 
 #include <Arduino.h>
 
-#define BIT_ONE_US 56
-#define BIT_ZERO_US 110
-#define PREAMBLE_NUM 15
-#define REPEAT_PACKET 3
+#define DECODER_ADDRESS_OFFSET 0xC000
+#define ACC_DECORDER_ADDRESS_OFFSET 0c3800
 
-#define DECODER_ADDRESS 0x03
-
-#define STEP128   0b00111111
-
-#define F0_MASK   0b00010000 
-
-#define F0F4MASK    0b00011111
-#define F0F4ORDER   0b10000000 
-#define F5F8MASK    0b00001111
-#define F5F8ORDER   0b10110000
-#define F9F12MASK   0b00001111
-#define F9F12ORDER  0b10100000
-#define F13F20ORDER 0b11011110
-#define F21F28ORDER 0b11011111
-
-#define ACCESSORY_ORDER         0b10000000
-#define ACCESSORY_ADDRESS_MASK1 0b00111111
-#define ACCESSORY_ADDRESS_MASK2 0b01110000
-
-#define ACCESSORY_ON         0b10001001
-#define ACCESSORY_OFF        0b10001000
-
-#define LOCO_FORWARD 0b10000000
-#define LOCO_REVERSE 0b00000000
-
-#define RAW_PACKET_LENGTH_DAFAULT 10
-
-#define OUTPIN1_DEFAULT 9
-#define OUTPIN2_DEFAULT 10
-
-class dcc_cont
+class ds_serial_master
 {
   public:
-    dcc_cont(uint8_t out_pin1 = OUTPIN1_DEFAULT,uint8_t out_pin2 = OUTPIN2_DEFAULT);
+    ds_serial_cont(uint8_t out_pin1 = OUTPIN1_DEFAULT,uint8_t out_pin2 = OUTPIN2_DEFAULT);
     virtual void write_func_packet(unsigned int address,byte function,bool on_off);
     virtual void write_speed_packet(unsigned int address,bool loco_direction,byte loco_speed);
     virtual void write_accessory_packet(unsigned int address,bool on_off);
