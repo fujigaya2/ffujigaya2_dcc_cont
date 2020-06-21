@@ -42,6 +42,16 @@ void loop()
     //false時はせっせとIdlepacketを送る。
     DCC.write_idle_packet();
   }
+  /*
+  digitalWrite(DCCPIN1,LOW);  
+  digitalWrite(DCCPIN2,HIGH);
+  Serial.println("1");
+  delay(2000);
+  digitalWrite(DCCPIN1,HIGH);  
+  digitalWrite(DCCPIN2,LOW);
+  Serial.println("2");
+  delay(2000);
+  */    
 }
 
 bool user_program(void)
