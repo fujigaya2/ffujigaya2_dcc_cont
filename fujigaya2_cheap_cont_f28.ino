@@ -7,14 +7,14 @@
 //CheapController用 190908 fujigaya2
 #define SPEED_REF A2
 #define BTN_DIR A3
-#define BTN_F0 6
-#define BTN_F1 7
-#define BTN_F2 8
-#define BTN_F3 11
-#define BTN_F4 12
+#define BTN_F0 2
+#define BTN_F1 4
+#define BTN_F2 7
+#define BTN_F3 8
+#define BTN_F4 9
 
-#define DCCPIN1 9
-#define DCCPIN2 10
+#define DCCPIN1 6
+#define DCCPIN2 5
 
 dcc_cont DCC(DCCPIN1,DCCPIN2);
 ds_serial_master ds_serial;
