@@ -6,23 +6,9 @@
 
 dcc_cont::dcc_cont(uint8_t out_pin1,uint8_t out_pin2)
 {
-#ifdef __AVR
-    // Calculate bit and port register for fast pin read and writes (AVR targets only)
-    _pwm_a_Port = digitalPinToPort(out_pin1);
-    _pwm_b_Port = digitalPinToPort(out_pin2);
-
-    _pwm_a_Bit = digitalPinToBitMask(out_pin1);
-    _pwm_b_Bit = digitalPinToBitMask(out_pin2);
-#else
-    // Use the slow digitalRead() and digitalWrite() functions for non-AVR targets
-    _pwm_a_Pin = out_pin1;
-    _pwm_b_Pin = out_pin2;
-#endif
-
   //pin config
-  DCC_PWM_A_OUTPUT();
-  DCC_PWM_B_OUTPUT();  
-  
+  pinMode(out_pin1, OUTPUT);  
+  pinMode(out_pin2, OUTPUT);
 }
 
 void dcc_cont::set_repeat_preamble(uint8_t repeat_num)
@@ -339,18 +325,14 @@ void dcc_cont::bit_one()
   //PORTB |= _BV(PB1);  //digitalWrite(9, HIGH);
   //PORTB &= ~_BV(PB2); //digitalWrite(10, LOW);
   //32u4 6,5pin  pd7,pc6
-  //PORTD |= _BV(PD7);  //digitalWrite(9, HIGH);
-  //PORTC &= ~_BV(PC6); //digitalWrite(10, LOW);
-  DCC_PWM_A_LOW();
-  DCC_PWM_B_HIGH();
+  PORTD |= _BV(PD7);  //digitalWrite(9, HIGH);
+  PORTC &= ~_BV(PC6); //digitalWrite(10, LOW);
   delayMicroseconds(bit_one_us);         
   //PORTB &= ~_BV(PB1); //digitalWrite(9, LOW);   
   //PORTB |= _BV(PB2);  //digitalWrite(10, HIGH);   
   //32u4 6,5pin  pd7,pc6
-  //PORTD &= ~_BV(PD7);  //digitalWrite(9, HIGH);
-  //PORTC |= _BV(PC6); //digitalWrite(10, LOW);
-  DCC_PWM_A_HIGH();
-  DCC_PWM_B_LOW();
+  PORTD &= ~_BV(PD7);  //digitalWrite(9, HIGH);
+  PORTC |= _BV(PC6); //digitalWrite(10, LOW);
   delayMicroseconds(bit_one_us);  
 }
 
@@ -360,17 +342,13 @@ void dcc_cont::bit_zero()
   //PORTB |= _BV(PB1);  //digitalWrite(9, HIGH);
   //PORTB &= ~_BV(PB2); //digitalWrite(10, LOW);
   //32u4 6,5pin  pd7,pc6
-  //PORTD |= _BV(PD7);  //digitalWrite(9, HIGH);
-  //PORTC &= ~_BV(PC6); //digitalWrite(10, LOW);
-  DCC_PWM_A_LOW();
-  DCC_PWM_B_HIGH();
+  PORTD |= _BV(PD7);  //digitalWrite(9, HIGH);
+  PORTC &= ~_BV(PC6); //digitalWrite(10, LOW);
   delayMicroseconds(bit_zero_us);         
   //PORTB &= ~_BV(PB1); //digitalWrite(9, LOW);   
   //PORTB |= _BV(PB2);  //digitalWrite(10, HIGH);   
   //32u4 6,5pin  pd7,pc6
-  //PORTD &= ~_BV(PD7);  //digitalWrite(9, HIGH);
-  //PORTC |= _BV(PC6); //digitalWrite(10, LOW);
-  DCC_PWM_A_HIGH();
-  DCC_PWM_B_LOW();
+  PORTD &= ~_BV(PD7);  //digitalWrite(9, HIGH);
+  PORTC |= _BV(PC6); //digitalWrite(10, LOW);
   delayMicroseconds(bit_zero_us);   
 }

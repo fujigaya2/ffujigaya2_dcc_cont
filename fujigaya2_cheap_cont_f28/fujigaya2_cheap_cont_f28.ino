@@ -1,155 +1,205 @@
-//200216 fujigaya2
-//200529 クラス化とか
+//20200626 fujigaya2
 
+//#include "Keyboard.h"
+#include "KeyLEDCont.h"
 #include "fujigaya2_dcc.h"
-#include "fujigaya2_ds_serial_master.h"
 
-//CheapController用 190908 fujigaya2
-#define SPEED_REF A2
-#define BTN_DIR A3
-#define BTN_F0 2
-#define BTN_F1 4
-#define BTN_F2 7
-#define BTN_F3 8
-#define BTN_F4 9
+#define WAIT_KEY  333
+#define WAIT_KEY_SPD  200
 
+//注意！fujigaya2_DCC.cpp内で固定で使っています！変更する場合は、Cpp内のbit_one(),bit_zero()内も変更すること！
 #define DCCPIN1 6
 #define DCCPIN2 5
 
+KeyLEDCont KLC;
 dcc_cont DCC(DCCPIN1,DCCPIN2);
-ds_serial_master ds_serial;
+
+static uint8_t keysLast_0 = 0;
+static uint8_t keysLast_1 = 0;
+
+//global buffer
+bool state_btn_dir = true; //false = reverse,true =forward
+int prev_speed = 0;  // Read keys
+uint16_t function_state[2] = {1,0};
+
+//Task Schedule
+unsigned long gPreviousL1 = 0; // 250ms interval(Packet Task)
+
+//temp_text
+char aText[16 + 1];
 
 void setup()
 {
-  // put your setup code here, to run once:
+  Serial.begin(115200);
+  // initialize control over the keyboard:
+  //Keyboard.begin();
+  
+  //KeyLEDCont init
+  KLC.Init();
+ 
+  //write Loco
+  KLC.seg_led_emit(SEG_L,SEG_O,SEG_C,SEG_O);
 
-  //ボタン関連
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(BTN_F0, INPUT_PULLUP);
-  pinMode(BTN_F1, INPUT_PULLUP);
-  pinMode(BTN_F2, INPUT_PULLUP);
-  pinMode(BTN_F3, INPUT_PULLUP);
-  pinMode(BTN_F4, INPUT_PULLUP);
-  pinMode(BTN_DIR, INPUT_PULLUP); 
-  ds_serial.begin(115200);
 }
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
   if(!user_program())
   {
     //false時はせっせとIdlepacketを送る。
     DCC.write_idle_packet();
   }
-  /*
-  digitalWrite(DCCPIN1,LOW);  
-  digitalWrite(DCCPIN2,HIGH);
-  Serial.println("1");
-  delay(2000);
-  digitalWrite(DCCPIN1,HIGH);  
-  digitalWrite(DCCPIN2,LOW);
-  Serial.println("2");
-  delay(2000);
-  */    
 }
 
-bool user_program(void)
+bool user_program()
 {
-  //CheapController用 200216 fujigaya2
-  //ボタンが押されたとき、digitalReadは0を返す。押さないときは1を返す。
-  //変更時　true
   
-  static boolean chattering_flag = false;
-  static unsigned long gPreviousL1 = millis();
-  static unsigned long gPreviousL2 = millis();
+  uint8_t keys_0;
+  uint8_t keys_1;
+  uint8_t keys_2;
 
-  static bool state_btn_f0 = false;
-  static bool state_btn_f1 = false;
-  static bool state_btn_f2 = false;
-  static bool state_btn_f3 = false;
-  static bool state_btn_f4 = false;
-  static bool state_btn_dir = true; //false = reverse,true =forward
 
-  //チャタリング回避　200ms
-  if(  chattering_flag == true)
-  {
-    if( (millis() - gPreviousL1) >= 200 ) 
-    {
-      chattering_flag = false;
-    }
-    else
-    {
-      return false;
-    }
-  }
   
-  if( digitalRead(BTN_F0) == 0)
+  keys_0 = KLC.get_main_key();
+  keys_1 = KLC.getKeys();
+
+
+  if( (millis() - gPreviousL1) >= 200)
   {
-    state_btn_f0 = !state_btn_f0;
-    //DCC.write_func_packet(DECODER_ADDRESS,0,state_btn_f0);
-    DCC.write_accessory_packet(0,true);
-    ds_serial.write_func_packet(DECODER_ADDRESS,0,state_btn_f0);
-    chattering_flag = true;
-    gPreviousL1 = millis();
-    return true;
-  }
-  if( digitalRead(BTN_F1) == 0)
+    //speed 値の確認！
+    int joy_loco_speed = KLC.volume_speed();
+    //値が違う時だけ送信！ 電圧が振れる対策でabsを入れる
+    if(abs(prev_speed - joy_loco_speed) > 5)
+    {
+      prev_speed = joy_loco_speed;
+      KLC.seg_number_emit2(prev_speed / 8);
+      sprintf(aText, "P%04d",prev_speed);
+      //Serial.print("Speed:");
+      Serial.println(aText);
+      //Keyboard.print(aText);
+      DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,prev_speed / 8);
+      gPreviousL1 = millis();
+      return true;
+    }
+  } 
+  
+     
+
+  if( keysLast_0 != keys_0)
   {
-    state_btn_f1 = !state_btn_f1;
-    //DCC.write_func_packet(DECODER_ADDRESS,1,state_btn_f1);
-    DCC.write_accessory_packet(1,true);
-    ds_serial.write_accessory_packet(1,state_btn_f1);
-    chattering_flag = true;
-    gPreviousL1 = millis();
-    return true;
-  }
-  if( digitalRead(BTN_F2) == 0)
-  {
-    state_btn_f2 = !state_btn_f2;
-    //DCC.write_func_packet(DECODER_ADDRESS,2,state_btn_f2);
-    DCC.write_accessory_packet(2,true);
-    chattering_flag = true;
-    gPreviousL1 = millis();
-    return true;
-  }
-  if( digitalRead(BTN_F3) == 0)
-  {
-    state_btn_f3 = !state_btn_f3;
-    //DCC.write_func_packet(DECODER_ADDRESS,3,state_btn_f3);
-    DCC.write_accessory_packet(3,true);
-    chattering_flag = true;
-    gPreviousL1 = millis();
-    return true;
-  }
-  if( digitalRead(BTN_F4) == 0)
-  {
-    state_btn_f4 = !state_btn_f4;
-    //DCC.write_func_packet(DECODER_ADDRESS,4,state_btn_f4);
-    DCC.write_accessory_packet(4,true);
-    chattering_flag = true;
-    gPreviousL1 = millis();
-    return true;
-  }
-  if( digitalRead(BTN_DIR) == 0)
-  {
-    state_btn_dir = !state_btn_dir;
-    //DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,0);
-    DCC.write_accessory_packet(5,true);
-    ds_serial.write_direction_packet(DECODER_ADDRESS,state_btn_dir);
-    chattering_flag = true;
-    gPreviousL1 = millis();
+    //Serial.print(F("Keys_0: 0x"));
+    //Serial.println(keys_0, HEX);
+    if (keys_0 == 0xFF)
+    {
+      Serial.print(F("Press: 0x"));
+      Serial.println(keysLast_0, HEX);
+      KLC.disp_seg(keysLast_0);
+      keyboard_send_main(keysLast_0);
+    }
+    keysLast_0 = keys_0;
     return true;
   }
 
-  if( (millis() - gPreviousL2) >= 200)
+  // Check key up
+  if (keysLast_1 != keys_1)
   {
-    unsigned int current_speed_volume = analogRead(SPEED_REF);
-    current_speed_volume = current_speed_volume / 8;
-    DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,current_speed_volume);
-    ds_serial.write_speed_packet(DECODER_ADDRESS,current_speed_volume);
-    gPreviousL2 =  millis();
+    Serial.print(F("Keys_1: 0x"));
+    Serial.println(keys_1, HEX);
+    if (keys_1 == 0xFF)
+    {
+      KLC.ButtonLED(keysLast_1);
+      keyboard_send_func(keysLast_1);
+      function_trans_send(keysLast_1);
+    }
+    keysLast_1 = keys_1;
     return true;
   }
   return false;
+
+}
+
+void function_trans_send(int num)
+{
+  if(num < 16)
+  {
+    uint16_t temp = 0x0001 << num;
+    function_state[0] ^= 0x0001 << num;
+    uint16_t judge = function_state[0] & (0x0001 << num);
+    DCC.write_func_packet(DECODER_ADDRESS,num,(bool)judge);
+  }  
+  else
+  {
+    uint16_t temp = 0x0001 << (num - 16);
+    function_state[1] ^= 0x0001 << (num - 16);
+    uint16_t judge = function_state[1] & (0x0001 << (num - 16));
+    DCC.write_func_packet(DECODER_ADDRESS,num,(bool)judge);
+  }
+   
+}
+
+void keyboard_send_main(uint8_t num)
+{
+  //Keyboard出力だが、zで方向転換のため、ちょっと拡張にしたい！
+  switch(num)
+  {
+    case 0:  break;  //loco
+    case 1:  break;  //switch
+    case 2:  break;      //t
+    case 3:  break;      //c
+    case 4:  
+      //Keyboard.press(KEY_LEFT_SHIFT);
+      //Keyboard.press('z');
+      //Keyboard.releaseAll();
+      state_btn_dir = true;
+      DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,prev_speed / 8);
+      break;  //for
+    case 5:
+      //Keyboard.press(KEY_LEFT_ALT);
+      //Keyboard.press('z');
+      //Keyboard.releaseAll();
+      state_btn_dir = false;
+      DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,prev_speed / 8);
+      break;  //rev
+    default:      break;                
+  }
+}
+
+
+
+void keyboard_send_func(uint8_t num)
+{
+  uint8_t sel_num = num / 10;
+  uint8_t char_num = num % 10 + 0x30;
+  //29-31は特殊
+  switch(num)
+  {
+    case 29:
+    case 30:
+      return;
+    case 31:
+      //Keyboard.press(32);
+      //Keyboard.releaseAll();return;
+    default:
+      break;
+  }
+  //F0-F28
+  switch(sel_num)
+  {
+    case 0:
+      //Keyboard.press(char_num);
+      //Keyboard.releaseAll();
+      break;
+    case 1:
+      //Keyboard.press(KEY_LEFT_SHIFT);
+      //Keyboard.press(char_num);
+      //Keyboard.releaseAll();
+      break;
+    case 2:
+      //Keyboard.press(KEY_LEFT_ALT) ;
+      //Keyboard.press(char_num);
+      //Keyboard.releaseAll();
+      break;
+    default:
+      break;
+  }
 }
