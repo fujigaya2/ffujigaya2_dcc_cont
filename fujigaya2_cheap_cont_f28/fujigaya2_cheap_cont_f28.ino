@@ -16,7 +16,6 @@
 #define DCCPIN1 6
 #define DCCPIN2 5
 
-//現状ここでピンを指定しても、意味がない！
 dcc_cont DCC(DCCPIN1,DCCPIN2);
 ds_serial_master ds_serial;
 
