@@ -60,7 +60,7 @@ void KeyLEDCont::seg_number_emit(int num)
 }
 
 
-void KeyLEDCont::seg_number_emit2(int num)
+void KeyLEDCont::seg_number_emit2(int num,boolean dir)
 {
   //4桁数値表示 0は表示なし
   uint8_t seg0 = 0b00000000;
@@ -80,6 +80,18 @@ void KeyLEDCont::seg_number_emit2(int num)
     seg2 = seg_trans_num(num / 10 % 10);
   }
   seg3 = seg_trans_num(num % 10);
+
+  //方向を加える
+  if(dir == true)
+  {
+    //forward
+    seg0 |= 0b10000000;
+  }
+  else
+  {
+    seg3 |= 0b10000000;
+  }
+  
   seg_led_emit(seg0,seg1,seg2,seg3);
 }
 

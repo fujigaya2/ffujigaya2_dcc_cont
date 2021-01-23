@@ -63,7 +63,7 @@ class KeyLEDCont
     void Init();
     void disp_seg(uint8_t num);
     void seg_number_emit(int num);
-    void seg_number_emit2(int num);
+    void seg_number_emit2(int num,boolean dir);
     int8_t seg_trans_num(char num);
     void seg_led_emit(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t char3);
     void ButtonLED(int num);

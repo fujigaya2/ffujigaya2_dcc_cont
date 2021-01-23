@@ -72,7 +72,7 @@ bool user_program()
     if(abs(prev_speed - joy_loco_speed) > 5)
     {
       prev_speed = joy_loco_speed;
-      KLC.seg_number_emit2(prev_speed / 8);
+      KLC.seg_number_emit2(prev_speed / 8,state_btn_dir);
       sprintf(aText, "P%04d",prev_speed);
       //Serial.print("Speed:");
       Serial.println(aText);
