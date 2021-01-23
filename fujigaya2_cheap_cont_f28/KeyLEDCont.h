@@ -61,16 +61,19 @@ class KeyLEDCont
   public:
     KeyLEDCont();
     void Init();
+    void disp_On_Off(boolean OnOff);
     void disp_seg(uint8_t num);
     void seg_number_emit(int num);
     void seg_number_emit2(int num,boolean dir);
     int8_t seg_trans_num(char num);
     void seg_led_emit(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t char3);
+    void seg_led_emit2(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t char3);
     void ButtonLED(int num);
     uint8_t getKeys();
     void main_key_init();
     uint8_t get_main_key();
     int volume_speed();
+
     
     TM1637* tm1637_1;
     TM1637* tm1637_2;

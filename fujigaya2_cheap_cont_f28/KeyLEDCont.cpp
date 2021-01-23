@@ -38,6 +38,22 @@ void KeyLEDCont::Init()
   main_key_init();
 }
 
+void KeyLEDCont::disp_On_Off(boolean OnOff)
+{
+  if(OnOff == true)
+  {
+    // Turn display on
+    tm1637_1->displayOn();
+    tm1637_2->displayOn();
+  }
+  else
+  {
+    // Turn display off
+    tm1637_1->displayOff();
+    tm1637_2->displayOff();
+  }
+}
+
 void KeyLEDCont::disp_seg(uint8_t num)
 {
   //キーボード送信
@@ -122,6 +138,18 @@ void KeyLEDCont::seg_led_emit(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t 
   tm1637_1->writeData(0x1, char1);
   tm1637_1->writeData(0x2, char2);
   tm1637_1->writeData(0x3, char3);
+}
+
+void KeyLEDCont::seg_led_emit2(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t char3)
+{
+  //Button 表示
+  tm1637_1->writeData(0x4, char0);
+  tm1637_1->writeData(0x5, char1);
+  tm1637_2->writeData(0x4, char2);
+  tm1637_2->writeData(0x5, char3);
+  //Functionも合わせて書き込む
+  function_state[0] = char0 + char1 * 0x100;
+  function_state[1] = char2 + char3 * 0x100;
 }
 
 void KeyLEDCont::ButtonLED(int num)

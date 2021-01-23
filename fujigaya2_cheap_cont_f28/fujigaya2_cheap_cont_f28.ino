@@ -18,12 +18,22 @@ static uint8_t keysLast_0 = 0;
 static uint8_t keysLast_1 = 0;
 
 //global buffer
+//ここをBankにする。
 bool state_btn_dir = true; //false = reverse,true =forward
 int prev_speed = 0;  // Read keys
 uint16_t function_state[2] = {1,0};
+int loco_address = DECODER_ADDRESS;
+
+//表示関係
+int disp_flag = 0;
+
+//Mode関係
+int mode_loco_flag = true;//false:通常,true:Loco設定
+int temp_loco_num = 0;
 
 //Task Schedule
 unsigned long gPreviousL1 = 0; // 250ms interval(Packet Task)
+unsigned long gPreviousL2 = 0; // 250ms interval(Packet Task)
 
 //temp_text
 char aText[16 + 1];
@@ -77,14 +87,36 @@ bool user_program()
       //Serial.print("Speed:");
       Serial.println(aText);
       //Keyboard.print(aText);
-      DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,prev_speed / 8);
+      DCC.write_speed_packet(loco_address,state_btn_dir,prev_speed / 8);
       gPreviousL1 = millis();
       return true;
     }
   } 
   
-     
+  if( (millis() - gPreviousL2) >= 100)
+  {
+    //disp blink
+    if(mode_loco_flag == true)
+    {
+      disp_flag += 1;
+    }
+    else
+    {
+      disp_flag = 0;      
+    }
 
+    if(disp_flag < 3)
+    {
+      KLC.disp_On_Off(true);
+    }
+    else
+    {
+      KLC.disp_On_Off(false);
+    }
+    disp_flag &= 0x03; 
+    gPreviousL2 = millis();     
+  }
+  
   if( keysLast_0 != keys_0)
   {
     //Serial.print(F("Keys_0: 0x"));
@@ -93,7 +125,7 @@ bool user_program()
     {
       Serial.print(F("Press: 0x"));
       Serial.println(keysLast_0, HEX);
-      KLC.disp_seg(keysLast_0);
+      KLC.disp_seg(keysLast_0);      
       keyboard_send_main(keysLast_0);
     }
     keysLast_0 = keys_0;
@@ -107,9 +139,18 @@ bool user_program()
     Serial.println(keys_1, HEX);
     if (keys_1 == 0xFF)
     {
-      KLC.ButtonLED(keysLast_1);
-      keyboard_send_func(keysLast_1);
-      function_trans_send(keysLast_1);
+      if(mode_loco_flag == false)
+      {
+        KLC.ButtonLED(keysLast_1);
+        keyboard_send_func(keysLast_1);
+        function_trans_send(keysLast_1);
+      }
+      else
+      {
+        int temp_num = loco_num_add(keysLast_1);
+        //KLC.ButtonLED(0x07);
+        KLC.seg_number_emit2(temp_num,state_btn_dir);
+      }
     }
     keysLast_1 = keys_1;
     return true;
@@ -125,14 +166,14 @@ void function_trans_send(int num)
     uint16_t temp = 0x0001 << num;
     function_state[0] ^= 0x0001 << num;
     uint16_t judge = function_state[0] & (0x0001 << num);
-    DCC.write_func_packet(DECODER_ADDRESS,num,(bool)judge);
+    DCC.write_func_packet(loco_address,num,(bool)judge);
   }  
   else
   {
     uint16_t temp = 0x0001 << (num - 16);
     function_state[1] ^= 0x0001 << (num - 16);
     uint16_t judge = function_state[1] & (0x0001 << (num - 16));
-    DCC.write_func_packet(DECODER_ADDRESS,num,(bool)judge);
+    DCC.write_func_packet(loco_address,num,(bool)judge);
   }
    
 }
@@ -142,7 +183,42 @@ void keyboard_send_main(uint8_t num)
   //Keyboard出力だが、zで方向転換のため、ちょっと拡張にしたい！
   switch(num)
   {
-    case 0:  break;  //loco
+    case 0:
+      //loco　address変更対応
+      mode_loco_flag = ! mode_loco_flag;
+      if(mode_loco_flag == true)
+      {
+        //Address変更モード突入
+        //0-10の値だけ打ち込める旨の表示
+        
+        KLC.seg_led_emit2(0xff,0x07,0x00,0x00);
+      }
+      if(mode_loco_flag == false)
+      {
+        //復帰
+        if ((temp_loco_num == 0) || (temp_loco_num == loco_address))
+        {
+          //Address 変更無し
+        }
+        else
+        {
+          //Address 変更
+          loco_address = temp_loco_num;
+          //Function reset　ここに
+          function_state[0] = 0;
+          function_state[1] = 0;
+        }
+        loco_num_reset();
+        //address表示
+        KLC.seg_number_emit2(loco_address,state_btn_dir);
+        //Function表示
+        KLC.seg_led_emit2((function_state[0])& 0xff,(function_state[0] >> 8)& 0xff,(function_state[1])& 0xff,(function_state[1] >> 8)& 0xff);
+        //FunctionをDCC側にもダウンロード
+        uint32_t temp = (uint32_t)function_state[0] + (uint32_t)function_state[1] * 0x10000; 
+        Serial.println(temp);
+        DCC.set_function_default(temp);
+      }
+      break;  
     case 1:  break;  //switch
     case 2:  break;      //t
     case 3:  break;      //c
@@ -151,17 +227,18 @@ void keyboard_send_main(uint8_t num)
       //Keyboard.press('z');
       //Keyboard.releaseAll();
       state_btn_dir = true;
-      DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,prev_speed / 8);
+      DCC.write_speed_packet(loco_address,state_btn_dir,prev_speed / 8);
       break;  //for
     case 5:
       //Keyboard.press(KEY_LEFT_ALT);
       //Keyboard.press('z');
       //Keyboard.releaseAll();
       state_btn_dir = false;
-      DCC.write_speed_packet(DECODER_ADDRESS,state_btn_dir,prev_speed / 8);
+      DCC.write_speed_packet(loco_address,state_btn_dir,prev_speed / 8);
       break;  //rev
     default:      break;                
   }
+
 }
 
 
@@ -186,7 +263,7 @@ void keyboard_send_func(uint8_t num)
   switch(sel_num)
   {
     case 0:
-      //Keyboard.press(char_num);
+      //Keyboard.press(char_num) ;
       //Keyboard.releaseAll();
       break;
     case 1:
@@ -203,3 +280,26 @@ void keyboard_send_func(uint8_t num)
       break;
   }
 }
+
+void loco_num_reset()
+{
+  //番号をリセット
+  temp_loco_num = 0;
+}
+
+int loco_num_add(uint16_t num)
+{
+  //番号を入れていく
+  if(num <= 9 )
+  {
+    temp_loco_num %= 1000; 
+    temp_loco_num = temp_loco_num * 10 + num;   
+  }
+  if(num == 10)
+  {
+    temp_loco_num = 0;
+  }
+  Serial.println(temp_loco_num);
+  return temp_loco_num; 
+}
+

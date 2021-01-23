@@ -11,6 +11,21 @@ dcc_cont::dcc_cont(uint8_t out_pin1,uint8_t out_pin2)
   pinMode(out_pin2, OUTPUT);
 }
 
+void dcc_cont::set_function_default(uint32_t func_value)
+{
+  //functionの初期値を入れる。
+  //F0～F4の特殊な順番を考慮する。
+  Serial.println("set_function_default");
+  uint32_t temp_f0 =  (func_value & 0b00001) << 4;
+  Serial.println(temp_f0,BIN);
+  uint32_t temp_f1_f4 = (func_value & 0b11110) >> 1;
+  Serial.println(temp_f1_f4,BIN);
+  uint32_t temp_f5_f28 = func_value & 0xffffffe0;
+  Serial.println(temp_f5_f28,BIN);
+  past_func = temp_f5_f28 | temp_f1_f4 | temp_f0;
+  Serial.println(past_func,BIN);
+}
+
 void dcc_cont::set_repeat_preamble(uint8_t repeat_num)
 {
   //preambleのset関数
@@ -52,7 +67,6 @@ void dcc_cont::write_reset_packet()
 void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
 {
   //function write
-  //現状複数Locoを扱ったときはStaticで１Function状態しか記憶していないため、問題が生じる。！
  
   //命令開始
   digitalWrite(LED_BUILTIN,HIGH);
@@ -88,7 +102,7 @@ void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
 {
   //write function
   //送信functionマップに合わせて少々特殊な順番で格納する。
-  static uint32_t past_func = 0x00000000;
+  //static uint32_t past_func = 0x00000000;
   //命令開始
   digitalWrite(LED_BUILTIN,HIGH);
   //格納
@@ -97,16 +111,16 @@ void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
     switch(function_no)
     {
       case 0:
-        past_func |= F0_MASK;
+        past_func |= (uint32_t)F0_MASK;
         break;
       case 1:
       case 2:
       case 3:
       case 4:
-        past_func |= 0x01 << (function_no - 1);
+        past_func |= (uint32_t)0x01 << (function_no - 1);
         break;
       default:
-        past_func |= 0x01 << function_no;
+        past_func |= (uint32_t)0x01 << function_no;
         break;
     }
   }
@@ -115,16 +129,16 @@ void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
     switch(function_no)
     {
       case 0:
-        past_func ^= F0_MASK;
+        past_func ^= (uint32_t)F0_MASK;
         break;
       case 1:
       case 2:
       case 3:
       case 4:
-        past_func ^= 0x01 << (function_no - 1);
+        past_func ^= (uint32_t)0x01 << (function_no - 1);
         break;
       default:
-        past_func ^= 0x01 << function_no;
+        past_func ^= (uint32_t)0x01 << function_no;
         break;
     }
   }
@@ -154,7 +168,7 @@ void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
   //Serial.print(past_func,HEX);
   //Serial.print(",");
   //Serial.println((uint8_t)past_func & F0F4MASK | F0F4ORDER,HEX);
-  
+  Serial.println(past_func,BIN);
 }
 
 

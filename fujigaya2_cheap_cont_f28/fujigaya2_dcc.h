@@ -52,6 +52,7 @@ class dcc_cont
     virtual void write_accessory_packet(unsigned int address,bool on_off);
     virtual void write_idle_packet();
     virtual void write_reset_packet()    ;
+    virtual void set_function_default(uint32_t func_value);
     virtual void set_repeat_preamble(uint8_t repeat_num);
     virtual void set_repeat_packet(uint8_t repeat_num);
     virtual void set_pulse_us(uint32_t one_us,uint32_t zero_us);
@@ -75,6 +76,7 @@ class dcc_cont
     uint32_t bit_zero_us = BIT_ZERO_US;
     uint8_t raw_packet[RAW_PACKET_LENGTH_DAFAULT];
     uint8_t raw_packet_length; 
+    uint32_t past_func = 0x00000000;//内部FuncState
 
  
 };
