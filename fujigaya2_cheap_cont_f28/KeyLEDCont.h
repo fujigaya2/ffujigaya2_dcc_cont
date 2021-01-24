@@ -67,7 +67,7 @@ class KeyLEDCont
     void seg_number_emit2(int num,boolean dir);
     int8_t seg_trans_num(char num);
     void seg_led_emit(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t char3);
-    void seg_led_emit2(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t char3);
+    void button_led_emit(uint32_t button);
     void ButtonLED(int num);
     uint8_t getKeys();
     void main_key_init();
@@ -80,5 +80,5 @@ class KeyLEDCont
     
    
   private:
-    uint16_t function_state[2];//初期値で０にするため！  
+    uint32_t function_state_32;//初期値で０にするため！  
 };

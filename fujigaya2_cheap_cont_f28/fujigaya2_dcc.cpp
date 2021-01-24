@@ -15,15 +15,15 @@ void dcc_cont::set_function_default(uint32_t func_value)
 {
   //functionの初期値を入れる。
   //F0～F4の特殊な順番を考慮する。
-  Serial.println("set_function_default");
-  uint32_t temp_f0 =  (func_value & 0b00001) << 4;
-  Serial.println(temp_f0,BIN);
-  uint32_t temp_f1_f4 = (func_value & 0b11110) >> 1;
-  Serial.println(temp_f1_f4,BIN);
-  uint32_t temp_f5_f28 = func_value & 0xffffffe0;
-  Serial.println(temp_f5_f28,BIN);
+  //Serial.println("set_function_default");
+  uint32_t temp_f0 =  (func_value & (uint32_t)0b00001) << 4;
+  //Serial.println(temp_f0,BIN);
+  uint32_t temp_f1_f4 = (func_value & (uint32_t)0b11110) >> 1;
+  //Serial.println(temp_f1_f4,BIN);
+  uint32_t temp_f5_f28 = func_value & (uint32_t)0xffffffe0;
+  //Serial.println(temp_f5_f28,BIN);
   past_func = temp_f5_f28 | temp_f1_f4 | temp_f0;
-  Serial.println(past_func,BIN);
+  //Serial.println(past_func,BIN);
 }
 
 void dcc_cont::set_repeat_preamble(uint8_t repeat_num)
@@ -168,7 +168,7 @@ void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
   //Serial.print(past_func,HEX);
   //Serial.print(",");
   //Serial.println((uint8_t)past_func & F0F4MASK | F0F4ORDER,HEX);
-  Serial.println(past_func,BIN);
+  //Serial.println(past_func,BIN);
 }
 
 

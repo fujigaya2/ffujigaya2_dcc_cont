@@ -21,7 +21,7 @@ static uint8_t keysLast_1 = 0;
 //ここをBankにする。
 bool state_btn_dir = true; //false = reverse,true =forward
 int prev_speed = 0;  // Read keys
-uint16_t function_state[2] = {1,0};
+uint32_t function_state_32 = 1;
 int loco_address = DECODER_ADDRESS;
 
 //表示関係
@@ -161,21 +161,9 @@ bool user_program()
 
 void function_trans_send(int num)
 {
-  if(num < 16)
-  {
-    uint16_t temp = 0x0001 << num;
-    function_state[0] ^= 0x0001 << num;
-    uint16_t judge = function_state[0] & (0x0001 << num);
-    DCC.write_func_packet(loco_address,num,(bool)judge);
-  }  
-  else
-  {
-    uint16_t temp = 0x0001 << (num - 16);
-    function_state[1] ^= 0x0001 << (num - 16);
-    uint16_t judge = function_state[1] & (0x0001 << (num - 16));
-    DCC.write_func_packet(loco_address,num,(bool)judge);
-  }
-   
+  function_state_32 ^= (uint32_t)0x01 << num;
+  uint32_t judge = function_state_32 & ((uint32_t)0x01 << num);
+  DCC.write_func_packet(loco_address,num,(bool)judge);
 }
 
 void keyboard_send_main(uint8_t num)
@@ -190,8 +178,8 @@ void keyboard_send_main(uint8_t num)
       {
         //Address変更モード突入
         //0-10の値だけ打ち込める旨の表示
-        
-        KLC.seg_led_emit2(0xff,0x07,0x00,0x00);
+        KLC.button_led_emit((uint32_t)0x000007ff);
+        //KLC.seg_led_emit2(0xff,0x07,0x00,0x00);
       }
       if(mode_loco_flag == false)
       {
@@ -204,17 +192,16 @@ void keyboard_send_main(uint8_t num)
         {
           //Address 変更
           loco_address = temp_loco_num;
-          //Function reset　ここに
-          function_state[0] = 0;
-          function_state[1] = 0;
+          //Function reset
+          function_state_32 = 0;
         }
         loco_num_reset();
         //address表示
         KLC.seg_number_emit2(loco_address,state_btn_dir);
         //Function表示
-        KLC.seg_led_emit2((function_state[0])& 0xff,(function_state[0] >> 8)& 0xff,(function_state[1])& 0xff,(function_state[1] >> 8)& 0xff);
+        KLC.button_led_emit(function_state_32);
         //FunctionをDCC側にもダウンロード
-        uint32_t temp = (uint32_t)function_state[0] + (uint32_t)function_state[1] * 0x10000; 
+        uint32_t temp = function_state_32; 
         Serial.println(temp);
         DCC.set_function_default(temp);
       }

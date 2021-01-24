@@ -8,8 +8,7 @@ KeyLEDCont::KeyLEDCont()
   //constructor
  tm1637_1 = new TM1637(TM1637_1_CLK_PIN, TM1637_1_DIO_PIN);
  tm1637_2 = new TM1637(TM1637_2_CLK_PIN, TM1637_2_DIO_PIN);
- function_state[0] = 1;
- function_state[1] = 0;
+ function_state_32 = 1;
 }
 
 void KeyLEDCont::Init()
@@ -140,36 +139,25 @@ void KeyLEDCont::seg_led_emit(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t 
   tm1637_1->writeData(0x3, char3);
 }
 
-void KeyLEDCont::seg_led_emit2(uint8_t char0,uint8_t char1,uint8_t char2,uint8_t char3)
+void KeyLEDCont::button_led_emit(uint32_t button)
 {
   //Button 表示
-  tm1637_1->writeData(0x4, char0);
-  tm1637_1->writeData(0x5, char1);
-  tm1637_2->writeData(0x4, char2);
-  tm1637_2->writeData(0x5, char3);
+  tm1637_1->writeData(0x4, (button      ) & 0xff);
+  tm1637_1->writeData(0x5, (button >>  8) & 0xff);
+  tm1637_2->writeData(0x4, (button >> 16) & 0xff);
+  tm1637_2->writeData(0x5, (button >> 24) & 0xff);
   //Functionも合わせて書き込む
-  function_state[0] = char0 + char1 * 0x100;
-  function_state[1] = char2 + char3 * 0x100;
+  function_state_32 = button;
 }
 
 void KeyLEDCont::ButtonLED(int num)
 {
   //buttonLEDのどこを光らせるか？
-  //16bitマイコンのため16bit以上のシフトはバグる！のでFunctionは16ビットごとに分けておいた。
-  if(num < 16)
-  {
-    uint16_t temp = 0x0001 << num;
-    function_state[0] ^= 0x0001 << num;
-    tm1637_1->writeData(5,(function_state[0] >>  8)& 0xff);
-    tm1637_1->writeData(4,(function_state[0]      )& 0xff);
-  }  
-  else
-  {
-    uint16_t temp = 0x0001 << (num - 16);
-    function_state[1] ^= 0x0001 << (num - 16);
-    tm1637_2->writeData(5,(function_state[1] >>  8)& 0xff);
-    tm1637_2->writeData(4,(function_state[1]      )& 0xff);
-  }  
+  function_state_32 ^= (uint32_t)0x01 << num;
+  tm1637_1->writeData(4,(function_state_32      )& 0xff);
+  tm1637_1->writeData(5,(function_state_32 >>  8)& 0xff);
+  tm1637_2->writeData(4,(function_state_32 >> 16)& 0xff);
+  tm1637_2->writeData(5,(function_state_32 >> 24)& 0xff);
 }
 
 uint8_t KeyLEDCont::getKeys()
