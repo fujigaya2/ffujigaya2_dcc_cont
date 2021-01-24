@@ -8,7 +8,7 @@ KeyLEDCont::KeyLEDCont()
   //constructor
  tm1637_1 = new TM1637(TM1637_1_CLK_PIN, TM1637_1_DIO_PIN);
  tm1637_2 = new TM1637(TM1637_2_CLK_PIN, TM1637_2_DIO_PIN);
- function_state_32 = 1;
+ function_state_32 = 0;
 }
 
 void KeyLEDCont::Init()

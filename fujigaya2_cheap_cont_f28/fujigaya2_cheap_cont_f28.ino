@@ -14,21 +14,33 @@
 KeyLEDCont KLC;
 dcc_cont DCC(DCCPIN1,DCCPIN2);
 
-static uint8_t keysLast_0 = 0;
-static uint8_t keysLast_1 = 0;
+static uint8_t keysLast_0 = 0xFF;
+static uint8_t keysLast_1 = 0xFF;
 
 //global buffer
 //ここをBankにする。
-bool state_btn_dir = true; //false = reverse,true =forward
+bool state_btn_dir = false; //false = reverse,true =forward
 int prev_speed = 0;  // Read keys
-uint32_t function_state_32 = 1;
+uint32_t function_state_32 = 0;
 int loco_address = DECODER_ADDRESS;
+
+//5つだけ覚えておくことにする。
+#define LOCO_BANK_NUM 10
+typedef struct
+{   
+  bool state_btn_dir; //false = reverse,true =forward
+  int prev_speed;  // Read keys
+  uint32_t function_state_32;
+  int loco_address;
+} loco_bank_struct;
+loco_bank_struct LB[LOCO_BANK_NUM];
+int loco_bank_count = 0;//次に格納する番地
 
 //表示関係
 int disp_flag = 0;
 
 //Mode関係
-int mode_loco_flag = true;//false:通常,true:Loco設定
+int mode_loco_flag = false;//false:通常,true:Loco設定
 int temp_loco_num = 0;
 
 //Task Schedule
@@ -48,7 +60,11 @@ void setup()
   KLC.Init();
  
   //write Loco
-  KLC.seg_led_emit(SEG_L,SEG_O,SEG_C,SEG_O);
+  //KLC.seg_led_emit(SEG_L,SEG_O,SEG_C,SEG_O);
+  KLC.seg_led_emit(SEG_O,SEG_O,SEG_O,SEG_O);
+
+  //loco_bank_reset
+  loco_bank_reset();
 
 }
 
@@ -63,7 +79,7 @@ void loop()
 
 bool user_program()
 {
-  
+
   uint8_t keys_0;
   uint8_t keys_1;
   uint8_t keys_2;
@@ -72,7 +88,6 @@ bool user_program()
   
   keys_0 = KLC.get_main_key();
   keys_1 = KLC.getKeys();
-
 
   if( (millis() - gPreviousL1) >= 200)
   {
@@ -147,7 +162,7 @@ bool user_program()
       }
       else
       {
-        int temp_num = loco_num_add(keysLast_1);
+        int temp_num = temp_loco_num_add(keysLast_1);
         //KLC.ButtonLED(0x07);
         KLC.seg_number_emit2(temp_num,state_btn_dir);
       }
@@ -177,6 +192,8 @@ void keyboard_send_main(uint8_t num)
       if(mode_loco_flag == true)
       {
         //Address変更モード突入
+        //現状LocoDataを格納
+        loco_bank_save(loco_address);
         //0-10の値だけ打ち込める旨の表示
         KLC.button_led_emit((uint32_t)0x000007ff);
         //KLC.seg_led_emit2(0xff,0x07,0x00,0x00);
@@ -193,9 +210,11 @@ void keyboard_send_main(uint8_t num)
           //Address 変更
           loco_address = temp_loco_num;
           //Function reset
-          function_state_32 = 0;
+          //function_state_32 = 0;
         }
-        loco_num_reset();
+        temp_loco_num_reset();
+        //Locoデータをロード
+        loco_bank_load(loco_address);
         //address表示
         KLC.seg_number_emit2(loco_address,state_btn_dir);
         //Function表示
@@ -203,7 +222,7 @@ void keyboard_send_main(uint8_t num)
         //FunctionをDCC側にもダウンロード
         uint32_t temp = function_state_32; 
         Serial.println(temp);
-        DCC.set_function_default(temp);
+        DCC.set_function_default(function_state_32);
       }
       break;  
     case 1:  break;  //switch
@@ -268,15 +287,15 @@ void keyboard_send_func(uint8_t num)
   }
 }
 
-void loco_num_reset()
+void temp_loco_num_reset()
 {
-  //番号をリセット
+  //temp番号をリセット
   temp_loco_num = 0;
 }
 
-int loco_num_add(uint16_t num)
+int temp_loco_num_add(uint16_t num)
 {
-  //番号を入れていく
+  //temp番号を入れていく
   if(num <= 9 )
   {
     temp_loco_num %= 1000; 
@@ -288,5 +307,85 @@ int loco_num_add(uint16_t num)
   }
   Serial.println(temp_loco_num);
   return temp_loco_num; 
+}
+
+void loco_bank_reset()
+{
+  //全て初期アドレスでリセットする。
+  for(int i = 0;i < LOCO_BANK_NUM;i++)
+  {
+    LB[i].state_btn_dir = state_btn_dir; //false = reverse,true =forward 
+    LB[i].prev_speed = prev_speed;  // Read keys
+    LB[i].function_state_32 = 0;//ここだけ少々違う！(最初のループで1→0となるため）
+    LB[i].loco_address = loco_address;
+  }
+  loco_bank_count = 0;
+}
+
+void loco_bank_save(int loco_address)
+{
+  //現状のaddressをbankに入れる。
+  boolean exist_flag = false;
+  //すでにBankにあるかを探す
+  for(int i = 0;i < LOCO_BANK_NUM;i++)
+  {
+    if(loco_address == LB[i].loco_address)
+    {
+      LB[i].state_btn_dir = state_btn_dir; 
+      LB[i].prev_speed = prev_speed;
+      LB[i].function_state_32 = function_state_32;
+      LB[i].loco_address = loco_address;
+      exist_flag = true;
+      Serial.print("loco_bank_save_exist:");
+      Serial.println(i);
+      break;
+    }
+  }
+  //もしBankになかった場合
+  if(exist_flag == false)
+  {
+    LB[loco_bank_count].state_btn_dir = state_btn_dir; 
+    LB[loco_bank_count].prev_speed = prev_speed;
+    LB[loco_bank_count].function_state_32 = function_state_32;
+    LB[loco_bank_count].loco_address = loco_address;
+    Serial.print("loco_bank_save_not_e:");
+    Serial.println(loco_bank_count);
+    loco_bank_count++;
+    if(loco_bank_count == LOCO_BANK_NUM)
+    {
+      loco_bank_count = 0;
+    }
+  }
+  
+}
+
+void loco_bank_load(int loco_address)
+{
+  //メインにロード、なかった場合は、新規作成
+  boolean exist_flag = false;
+  for(int i = 0 ;i < LOCO_BANK_NUM;i++)
+  {
+    if(loco_address == LB[i].loco_address)
+    {
+      state_btn_dir = LB[i].state_btn_dir; 
+      prev_speed = LB[i].prev_speed;
+      function_state_32 = LB[i].function_state_32;
+      loco_address = LB[i].loco_address;
+      exist_flag = true;
+      Serial.print("loco_bank_load_exist:");
+      Serial.println(i);
+      break;
+    }
+  }
+  if(exist_flag ==false)
+  {
+    //無い場合は初期化しておく
+    state_btn_dir = true; 
+    prev_speed = 0;
+    function_state_32 = 0;
+    //loco_address = loco_address;    
+    Serial.print("loco_bank_load_not_e:");
+    Serial.println(loco_address);
+  }
 }
 
