@@ -46,6 +46,7 @@
 #define SEG_C 0b01011000
 #define SEG_E 0b01111001
 #define SEG_F 0b01110001
+#define SEG_N 0b01010100
 #define SEG_R 0b01010000
 #define SEG_None 0x00
 #define SEG_S 0b01101100

@@ -11,6 +11,19 @@ dcc_cont::dcc_cont(uint8_t out_pin1,uint8_t out_pin2)
   pinMode(out_pin2, OUTPUT);
 }
 
+void dcc_cont::dcc_on(bool on_off)
+{
+  if(on_off == true)
+  {
+      dcc_out = true;
+  }
+  else
+  {
+      dcc_out = false;
+      bit_off();
+  }
+}
+
 void dcc_cont::set_function_default(uint32_t func_value)
 {
   //functionの初期値を入れる。
@@ -47,6 +60,10 @@ void dcc_cont::set_pulse_us(uint32_t one_us,uint32_t zero_us)
 
 void dcc_cont::write_idle_packet()
 {
+  if(dcc_out == false)
+  {
+    return ;
+  }
   //send idle packet
   raw_packet_reset();
   raw_packet_add(0xff);
@@ -56,6 +73,10 @@ void dcc_cont::write_idle_packet()
 
 void dcc_cont::write_reset_packet()
 {
+  if(dcc_out == false)
+  {
+    return ;
+  }
   //send reset packet
   raw_packet_reset();
   raw_packet_add(0x00);
@@ -67,6 +88,10 @@ void dcc_cont::write_reset_packet()
 void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
 {
   //function write
+  if(dcc_out == false)
+  {
+    return ;
+  }
  
   //命令開始
   digitalWrite(LED_BUILTIN,HIGH);
@@ -84,6 +109,11 @@ void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
 void dcc_cont::write_accessory_packet(unsigned int address,bool on_off)
 {
   //accessory write
+  if(dcc_out == false)
+  {
+    return ;
+  }
+  
   //命令開始
   digitalWrite(LED_BUILTIN,HIGH);
   raw_packet_reset();
@@ -239,6 +269,10 @@ uint8_t dcc_cont::write_packet()
     //packet_end_bit
     bit_one();
   }   
+  //railcom対応
+  //bit_cutout();
+  
+  
 }
 
 bool dcc_cont::loco_address_convert_add(int loco_address)
@@ -366,3 +400,24 @@ void dcc_cont::bit_zero()
   PORTC |= _BV(PC6); //digitalWrite(10, LOW);
   delayMicroseconds(bit_zero_us);   
 }
+
+void dcc_cont::bit_cutout()
+{
+  //Railcom cutout
+  bit_off();
+  delayMicroseconds(bit_cutoff_us);
+}
+
+void dcc_cont::bit_off()
+{
+  //Railcom cutout と DCC off用
+  //atmega328P 9,10pin
+  //PORTB |= _BV(PB1);  //digitalWrite(9, HIGH);
+  //PORTB &= ~_BV(PB2); //digitalWrite(10, LOW);
+  //32u4 6,5pin  pd7,pc6
+  PORTD |= _BV(PD7);
+  PORTC |= _BV(PC6);
+}
+
+
+

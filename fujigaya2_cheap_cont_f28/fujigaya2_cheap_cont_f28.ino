@@ -16,6 +16,10 @@ dcc_cont DCC(DCCPIN1,DCCPIN2);
 
 static uint8_t keysLast_0 = 0xFF;
 static uint8_t keysLast_1 = 0xFF;
+static uint8_t keysLast_onoff = 0xFF; //電源OnOff用
+
+//出力のOnOff F31でオンとする
+bool dcc_onoff_flag = false;//false:off true:on
 
 //global buffer
 //ここをBankにする。
@@ -24,7 +28,7 @@ int prev_speed = 0;  // Read keys
 uint32_t function_state_32 = 0;
 int loco_address = DECODER_ADDRESS;
 
-//5つだけ覚えておくことにする。
+//10こだけ覚えておくことにする。
 #define LOCO_BANK_NUM 10
 typedef struct
 {   
@@ -59,9 +63,8 @@ void setup()
   //KeyLEDCont init
   KLC.Init();
  
-  //write Loco
-  //KLC.seg_led_emit(SEG_L,SEG_O,SEG_C,SEG_O);
-  KLC.seg_led_emit(SEG_O,SEG_O,SEG_O,SEG_O);
+  //write Off
+  KLC.seg_led_emit(SEG_None,SEG_0,SEG_F,SEG_F);
 
   //loco_bank_reset
   loco_bank_reset();
@@ -82,12 +85,69 @@ bool user_program()
 
   uint8_t keys_0;
   uint8_t keys_1;
-  uint8_t keys_2;
-
-
+  uint8_t keys_onoff;
   
   keys_0 = KLC.get_main_key();
   keys_1 = KLC.getKeys();
+  keys_onoff = keys_1;
+  
+  //電源OnOffは一番最初に別口で確認する
+  if (keysLast_onoff != keys_onoff)
+  {
+    if ((keys_onoff == 0xFF) && (keysLast_onoff == 31))
+    {
+      Serial.print(F("Press: keys_onoff"));
+      Serial.println(keysLast_onoff, HEX);
+      //強制オフ
+      mode_loco_flag = false;
+      if(dcc_onoff_flag == false)
+      {
+        //On
+        KLC.seg_led_emit(SEG_None,SEG_None,SEG_0,SEG_N);
+        delay(500);
+        //初期化！
+        //Function表示　on表示
+        KLC.button_led_emit((uint32_t)0x80000000);        
+
+        //loco_bank_reset
+        loco_bank_reset();
+
+        //Keyバッファリセット
+        keysLast_0 = 0xFF;
+        keysLast_1 = 0xFF;
+        keysLast_onoff = 0xFF;
+
+        //Locoデータをロード
+        loco_bank_load(DECODER_ADDRESS);
+        loco_address = DECODER_ADDRESS;
+        //address表示
+        KLC.seg_number_emit2(loco_address,state_btn_dir);
+        //Function表示
+        KLC.button_led_emit(function_state_32);
+        //FunctionをDCC側にもダウンロード
+        DCC.set_function_default(function_state_32);
+                        
+        dcc_onoff_flag = true;
+      }
+      else
+      {
+        //Off
+        KLC.seg_led_emit(SEG_None,SEG_0,SEG_F,SEG_F);
+        //Function表示
+        KLC.button_led_emit((uint32_t)0x00000000);        
+        dcc_onoff_flag = false;
+      }
+      DCC.dcc_on(dcc_onoff_flag);
+    }
+    keysLast_onoff = keys_onoff;    
+    return true;
+  }
+
+  //dcc_onoff_flagがOffの時はこの後ろには進まない！
+  if(dcc_onoff_flag == false)
+  {
+    return true;
+  }
 
   if( (millis() - gPreviousL1) >= 200)
   {
@@ -103,9 +163,9 @@ bool user_program()
       Serial.println(aText);
       //Keyboard.print(aText);
       DCC.write_speed_packet(loco_address,state_btn_dir,prev_speed / 8);
-      gPreviousL1 = millis();
       return true;
     }
+    gPreviousL1 = millis();
   } 
   
   if( (millis() - gPreviousL2) >= 100)
@@ -262,6 +322,8 @@ void keyboard_send_func(uint8_t num)
     case 31:
       //Keyboard.press(32);
       //Keyboard.releaseAll();return;
+      //DCC_OnOffする
+      
     default:
       break;
   }
@@ -314,10 +376,10 @@ void loco_bank_reset()
   //全て初期アドレスでリセットする。
   for(int i = 0;i < LOCO_BANK_NUM;i++)
   {
-    LB[i].state_btn_dir = state_btn_dir; //false = reverse,true =forward 
-    LB[i].prev_speed = prev_speed;  // Read keys
-    LB[i].function_state_32 = 0;//ここだけ少々違う！(最初のループで1→0となるため）
-    LB[i].loco_address = loco_address;
+    LB[i].state_btn_dir = false; //false = reverse,true =forward 
+    LB[i].prev_speed = 0;  // Read keys
+    LB[i].function_state_32 = (uint32_t)0x80000000;//この時はF31だけOn状態0
+    LB[i].loco_address = DECODER_ADDRESS;
   }
   loco_bank_count = 0;
 }
@@ -382,7 +444,7 @@ void loco_bank_load(int loco_address)
     //無い場合は初期化しておく
     state_btn_dir = true; 
     prev_speed = 0;
-    function_state_32 = 0;
+    function_state_32 = (uint32_t)0x80000000;//この時はF31だけOn状態
     //loco_address = loco_address;    
     Serial.print("loco_bank_load_not_e:");
     Serial.println(loco_address);
