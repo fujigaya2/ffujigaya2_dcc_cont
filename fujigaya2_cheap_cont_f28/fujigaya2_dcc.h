@@ -7,7 +7,9 @@
 //#define BIT_ZERO_US 110
 #define BIT_ONE_US 50
 #define BIT_ZERO_US 110
-#define BIT_CUTOFF_US 500
+#define BIT_CUTOFF_WIDTH_US 500
+#define BIT_CUTOFF_START_US 30
+#define BIT_CUTOFF_END_US 30
 
 #define PREAMBLE_NUM 15
 #define REPEAT_PACKET 3
@@ -78,7 +80,9 @@ class dcc_cont
     uint8_t repeat_packet = REPEAT_PACKET;
     uint32_t bit_one_us = BIT_ONE_US;
     uint32_t bit_zero_us = BIT_ZERO_US;
-    uint32_t bit_cutoff_us = BIT_CUTOFF_US;
+    uint32_t bit_cutoff_width_us = BIT_CUTOFF_WIDTH_US;
+    uint32_t bit_cutoff_start_us = BIT_CUTOFF_START_US;
+    uint32_t bit_cutoff_end_us = BIT_CUTOFF_END_US;
     uint8_t raw_packet[RAW_PACKET_LENGTH_DAFAULT];
     uint8_t raw_packet_length; 
     uint32_t past_func = 0x00000000;//内部FuncState

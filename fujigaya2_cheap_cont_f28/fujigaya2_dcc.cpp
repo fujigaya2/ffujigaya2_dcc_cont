@@ -268,10 +268,10 @@ uint8_t dcc_cont::write_packet()
     write_byte(checksum);
     //packet_end_bit
     bit_one();
+    //railcom対応
+    bit_cutout();
   }   
-  //railcom対応
-  //bit_cutout();
-  
+
   
 }
 
@@ -404,8 +404,14 @@ void dcc_cont::bit_zero()
 void dcc_cont::bit_cutout()
 {
   //Railcom cutout
+  PORTD |= _BV(PD7);  //digitalWrite(9, HIGH);
+  PORTC &= ~_BV(PC6); //digitalWrite(10, LOW);  
+  delayMicroseconds(bit_cutoff_start_us);
   bit_off();
-  delayMicroseconds(bit_cutoff_us);
+  delayMicroseconds(bit_cutoff_width_us);
+  PORTD &= ~_BV(PD7);  //digitalWrite(9, HIGH);
+  PORTC |= _BV(PC6); //digitalWrite(10, LOW);
+  delayMicroseconds(bit_cutoff_end_us);
 }
 
 void dcc_cont::bit_off()
