@@ -304,6 +304,11 @@ bool dcc_cont::loco_speed_convert_add(bool loco_direction,byte loco_speed)
   {
     temp_speed = 127;
   }
+  //Speed１は緊急停止なので、２にこっそり変えておく。
+  if(temp_speed == 1)
+  {
+    temp_speed = 2;
+  }
   if(loco_direction == true)
   {
     temp_speed |= LOCO_FORWARD;
