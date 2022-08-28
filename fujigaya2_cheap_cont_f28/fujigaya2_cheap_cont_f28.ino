@@ -36,6 +36,7 @@ typedef struct
   int prev_speed;  // Read keys
   uint32_t function_state_32;
   int loco_address;
+  bool loco_exist;//存在するかどうかのフラグ
 } loco_bank_struct;
 loco_bank_struct LB[LOCO_BANK_NUM];
 int loco_bank_count = 0;//次に格納する番地
@@ -255,7 +256,19 @@ void keyboard_send_main(uint8_t num)
         //現状LocoDataを格納
         loco_bank_save(loco_address);
         //0-10の値だけ打ち込める旨の表示
-        KLC.button_led_emit((uint32_t)0x000007ff);
+        //合わせて、LocoBankにすでにある場合はショートカットを発動させる。
+        uint32_t led_emit_temp = 0x000007ff;
+        for(int loco_num = 0; loco_num < LOCO_BANK_NUM;loco_num++)
+        {
+          //ショートカットがある場合のLEDを点灯
+          if(LB[loco_num].loco_exist == true)
+          {
+            //32bitを処理しようとするとなんか内部的にしくじるので、下記のように書いているだけ。
+            led_emit_temp = led_emit_temp + (uint32_t)((0x00000001) << loco_num) * 65536; 
+          }
+        }
+        //KLC.button_led_emit((uint32_t)0x000007ff);
+        KLC.button_led_emit(led_emit_temp);
         //KLC.seg_led_emit2(0xff,0x07,0x00,0x00);
       }
       if(mode_loco_flag == false)
@@ -367,6 +380,16 @@ int temp_loco_num_add(uint16_t num)
   {
     temp_loco_num = 0;
   }
+  //16～25番のショートカットの扱い
+  //番号があったらtemp_loco_numへ入れる。
+  if((num >=16) && (num <= 16 + LOCO_BANK_NUM) )
+  {
+    int loco_bank_num = num - 16;
+    if(LB[loco_bank_num].loco_exist == true )
+    {
+      temp_loco_num = LB[loco_bank_num].loco_address;
+    }
+  }
   Serial.println(temp_loco_num);
   return temp_loco_num; 
 }
@@ -379,7 +402,8 @@ void loco_bank_reset()
     LB[i].state_btn_dir = false; //false = reverse,true =forward 
     LB[i].prev_speed = 0;  // Read keys
     LB[i].function_state_32 = (uint32_t)0x80000000;//この時はF31だけOn状態0
-    LB[i].loco_address = DECODER_ADDRESS;
+    LB[i].loco_address = 0;//DECODER_ADDRESS;
+    LB[i].loco_exist = false;//最初は存在なし。
   }
   loco_bank_count = 0;
 }
@@ -397,6 +421,7 @@ void loco_bank_save(int loco_address)
       LB[i].prev_speed = prev_speed;
       LB[i].function_state_32 = function_state_32;
       LB[i].loco_address = loco_address;
+      LB[i].loco_exist = true;//一応存在しているので、上書き（たぶん要らないと思うんだが）
       exist_flag = true;
       Serial.print("loco_bank_save_exist:");
       Serial.println(i);
@@ -410,6 +435,7 @@ void loco_bank_save(int loco_address)
     LB[loco_bank_count].prev_speed = prev_speed;
     LB[loco_bank_count].function_state_32 = function_state_32;
     LB[loco_bank_count].loco_address = loco_address;
+    LB[loco_bank_count].loco_exist = true;//存在を登録
     Serial.print("loco_bank_save_not_e:");
     Serial.println(loco_bank_count);
     loco_bank_count++;
