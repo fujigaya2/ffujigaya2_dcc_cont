@@ -1,5 +1,0 @@
-{
-    "board": "arduino:avr:micro",
-    "port": "COM3",
-    "sketch": "fujigaya2_cheap_cont_f28\\fujigaya2_cheap_cont_f28.ino"
-}
