@@ -52,6 +52,7 @@ class dcc_cont
     dcc_cont(uint8_t out_pin1 = OUTPIN1_DEFAULT,uint8_t out_pin2 = OUTPIN2_DEFAULT);
     virtual void dcc_on(bool on_off);
     virtual void write_func_packet(unsigned int address,byte function,bool on_off);
+    virtual void write_func_packet(unsigned int address,byte function);//現状値を送る場合
     virtual void write_speed_packet(unsigned int address,bool loco_direction,byte loco_speed);
     virtual void write_accessory_packet(unsigned int address,bool on_off);
     virtual void write_idle_packet();
@@ -74,6 +75,7 @@ class dcc_cont
     virtual bool loco_address_convert_add(int loco_address);
     virtual bool loco_speed_convert_add(bool loco_direction,byte loco_speed);
     virtual void loco_func_convert_add(uint8_t function_no,bool on_off);
+    virtual void loco_func_convert_add(uint8_t function_no);//現状値を送る場合
     virtual void accessory_address_onoff_convert_add(unsigned int address,bool on_off);
 
     uint8_t preamble_num = PREAMBLE_NUM;

@@ -106,6 +106,29 @@ void dcc_cont::write_func_packet(unsigned int address,byte function,bool on_off)
   digitalWrite(LED_BUILTIN,LOW);    
 }
 
+void dcc_cont::write_func_packet(unsigned int address,byte function)
+{
+  //function write
+  //現状値を送る場合
+  if(dcc_out == false)
+  {
+    return ;
+  }
+ 
+  //命令開始
+  digitalWrite(LED_BUILTIN,HIGH);
+  raw_packet_reset();
+  //address convert
+  loco_address_convert_add(address);
+  //function convert
+  loco_func_convert_add(function);
+  //送信
+  write_packet();
+  //命令終了
+  digitalWrite(LED_BUILTIN,LOW);    
+}
+
+
 void dcc_cont::write_accessory_packet(unsigned int address,bool on_off)
 {
   //accessory write
@@ -126,7 +149,37 @@ void dcc_cont::write_accessory_packet(unsigned int address,bool on_off)
 }
 
 //private
-
+void dcc_cont::loco_func_convert_add(uint8_t function_no)
+{
+  //現状値を送る場合
+  //送信
+  if(function_no <= 4)//f0-f4
+  {
+    raw_packet_add((uint8_t)past_func & F0F4MASK | F0F4ORDER);
+  }
+  else if(function_no <= 8)//f5-f8
+  {
+    raw_packet_add((uint8_t)(past_func >> 5) & F5F8MASK | F5F8ORDER);
+  }
+  else if(function_no <= 12)//f9-f12
+  {
+    raw_packet_add((uint8_t)(past_func >> 9) & F9F12MASK | F9F12ORDER);
+  }
+  else if(function_no <= 20)//f13-f20
+  {
+    raw_packet_add(F13F20ORDER);
+    raw_packet_add((uint8_t)(past_func >> 13));
+  }
+  else//f21-f28
+  {
+    raw_packet_add(F21F28ORDER);
+    raw_packet_add((uint8_t)(past_func >> 21));
+  }
+  //Serial.print(past_func,HEX);
+  //Serial.print(",");
+  //Serial.println((uint8_t)past_func & F0F4MASK | F0F4ORDER,HEX);
+  //Serial.println(past_func,BIN);
+}
 
 void dcc_cont::loco_func_convert_add(uint8_t function_no,bool on_off)
 {

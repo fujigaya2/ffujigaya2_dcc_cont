@@ -55,6 +55,10 @@ unsigned long gPreviousL2 = 0; // 250ms interval(Packet Task)
 //temp_text
 char aText[16 + 1];
 
+//idle時の送信用パケット制御用の変数 idle_send_ → is_と略す
+int is_num = -1;//-1で現状Loco、0 ～ LOCO_BANK_NUMがBank内の切り替え用変数
+int is_num_sub = 0;//0～4 0:speed,1func(4),1:func(8),2:func(12),3:func(20),4:func(28)とする切り替え変数。
+
 void setup()
 {
   Serial.begin(115200);
@@ -77,8 +81,117 @@ void loop()
   if(!user_program())
   {
     //false時はせっせとIdlepacketを送る。
-    DCC.write_idle_packet();
+    //DCC.write_idle_packet();
+    idle_send_program();
   }
+}
+
+void print_idle(int a,int b)
+{
+  Serial.print("(");
+  Serial.print(a);
+  Serial.print(",");
+  Serial.print(b);
+  Serial.println(")");
+}
+
+void idle_send_program()
+{
+  //アイドルパケットではなく、現状のLocoのリピートパケットや、
+  //バンク内のパケットを順繰りに出す。
+  //is_num(-1～9)で -1:現状と0～9(bank)の切り替え
+  //is_sub_num(0～5)で　0:speed,1:func(4),2:func(8),3:func(12),4:func(20),5:func(28)とする切り替え。 
+  
+  //現状の変数を一時退避
+  bool is_state_btn_dir = state_btn_dir;
+  int is_prev_speed = prev_speed;
+  uint32_t is_function_state_32 = function_state_32;
+  int is_loco_address = loco_address;
+  //bankの変数を現在のDCCへロード
+  if(is_num != -1)
+  {
+    //バンクに存在するか？
+    if(LB[is_num].loco_exist == true)
+    {
+      //０～９はバンク
+      if(LB[is_num].loco_address != loco_address)
+      {
+        //存在して、現状ロコでない場合
+        //コピー
+        state_btn_dir = LB[is_num].state_btn_dir;
+        prev_speed = LB[is_num].prev_speed;
+        function_state_32 = LB[is_num].function_state_32;
+        loco_address = LB[is_num].loco_address;
+        //DCC側のファンクションもセット
+        DCC.set_function_default(function_state_32);      
+      }
+      else
+      {
+        //存在するが、現状ロコと同じ場合はここ。（何もしない）
+      }
+    }
+    else
+    {
+      //bankにない場合は次は現状ロコ(-1)戻す。
+      //今回は現状ロコの値を流す。
+      is_num = -1;
+      //現状ロコの値が入っているのをそのまま使う
+      //is_numは次のSwitch文でis_num_subが5になるごとにインクリメントされて
+      //順繰りに進む。
+    }
+  }
+  
+  //debug
+  print_idle(is_num,is_num_sub);
+  //送信
+  switch(is_num_sub)
+  {
+    case 0:
+      DCC.write_speed_packet(loco_address,state_btn_dir,prev_speed / 8);
+      is_num_sub ++;
+      break;
+    case 1:
+      DCC.write_func_packet(loco_address,4);
+      is_num_sub ++;
+      break;
+    case 2:
+      DCC.write_func_packet(loco_address,8);
+      is_num_sub ++;
+      break;
+    case 3:
+      DCC.write_func_packet(loco_address,12);
+      is_num_sub ++;
+      break;
+    case 4:
+      DCC.write_func_packet(loco_address,20);
+      is_num_sub ++;
+      break;
+    case 5:
+      DCC.write_func_packet(loco_address,28);
+      is_num_sub = 0;
+      if(is_num < LOCO_BANK_NUM)
+      {
+        is_num ++;
+      }
+      else
+      {
+        is_num = 0;
+      }
+      break;
+    default:
+      //来ないはず。
+      break;
+  }
+
+  //退避変数を元に戻す（-１だった場合はやらなくてもよいが）
+  state_btn_dir = is_state_btn_dir;
+  prev_speed = is_prev_speed;
+  function_state_32 = is_function_state_32;
+  loco_address = is_loco_address;
+  //DCC側も現状に復旧
+  DCC.set_function_default(function_state_32);
+
+  return;
 }
 
 bool user_program()
